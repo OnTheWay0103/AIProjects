@@ -1,0 +1,12 @@
+# 文件整理
+
+
+mv -i -- *全勤* /Users/zhaoq0103/DEV/业务处理/财务-内部事项/
+
+# 这个命令不处理目录
+find . -maxdepth 1 -type f -name "*全勤*" -exec mv -iv {} "/Users/zhaoq0103/DEV/业务处理/财务-内部事项/" \;
+
+
+
+
+

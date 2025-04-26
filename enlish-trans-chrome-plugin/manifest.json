@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "英语单词翻译助手",
+  "version": "1.0",
+  "description": "显示选中单词的音标和中文翻译",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://openapi.youdao.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": [
+      "crypto-js.min.js",
+      "content.js"
+    ],
+    "css": ["styles.css"]
+  }]
+}

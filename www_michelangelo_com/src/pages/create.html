@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建图像 - Michelangelo</title>
+    <meta name="description" content="使用 AI 生成精美图像，支持中文提示词">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/create.css">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <a href="/">Michelangelo</a>
+            </div>
+            <div class="nav-links">
+                <a href="/gallery">作品展示</a>
+                <a href="/create" class="active">开始创作</a>
+                <a href="/login" class="login-btn">登录</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="create-container">
+        <div class="generator">
+            <!-- 左侧参数设置 -->
+            <aside class="settings-panel">
+                <div class="settings-section">
+                    <h3>提示词设置</h3>
+                    <div class="input-group">
+                        <label for="prompt">提示词</label>
+                        <textarea id="prompt" placeholder="用中文描述你想要生成的图像..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="negative-prompt">反向提示词</label>
+                        <textarea id="negative-prompt" placeholder="描述你不想在图像中出现的内容..."></textarea>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>风格选择</h3>
+                    <div class="style-grid">
+                        <button class="style-option" data-style="realistic">写实风格</button>
+                        <button class="style-option" data-style="anime">动漫风格</button>
+                        <button class="style-option" data-style="oil-painting">油画风格</button>
+                        <button class="style-option" data-style="watercolor">水彩风格</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>高级设置</h3>
+                    <div class="input-group">
+                        <label for="width">宽度</label>
+                        <input type="number" id="width" value="512" min="256" max="1024" step="64">
+                    </div>
+                    <div class="input-group">
+                        <label for="height">高度</label>
+                        <input type="number" id="height" value="512" min="256" max="1024" step="64">
+                    </div>
+                    <div class="input-group">
+                        <label for="steps">生成步数</label>
+                        <input type="range" id="steps" min="20" max="50" value="30">
+                        <span class="value-display">30</span>
+                    </div>
+                </div>
+
+                <button id="generate-btn" class="generate-button">生成图像</button>
+            </aside>
+
+            <!-- 右侧预览区域 -->
+            <div class="preview-panel">
+                <div class="preview-container">
+                    <div class="preview-placeholder">
+                        <p>输入提示词并点击生成按钮</p>
+                    </div>
+                    <img id="preview-image" style="display: none;">
+                </div>
+                <div class="preview-controls">
+                    <button id="download-btn" class="control-button" disabled>下载</button>
+                    <button id="share-btn" class="control-button" disabled>分享</button>
+                    <button id="save-btn" class="control-button" disabled>保存</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/about">关于我们</a>
+                <a href="/terms">使用条款</a>
+                <a href="/privacy">隐私政策</a>
+            </div>
+            <div class="copyright">
+                © 2024 Michelangelo. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="/scripts/create.js"></script>
+</body>
+</html> 

@@ -1,0 +1,24 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    # 具体构建步骤将根据选择的框架而定
+    - name: Build
+      run: echo "配置macOS构建步骤"
+      
+  # 为未来Windows支持准备的作业
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: echo "配置Windows构建步骤"

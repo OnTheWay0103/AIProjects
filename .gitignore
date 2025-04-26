@@ -1,0 +1,44 @@
+# 通用忽略文件
+.DS_Store
+node_modules/
+dist/
+build/
+
+# Python相关
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+myenv/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志文件
+*.log
+logs/
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 临时文件
+tmp/
+temp/
+.cache/
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 爬虫数据存储目录
+raw_api_responses/
