@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Michelangelo</title>
+    <link rel="stylesheet" href="/styles/common.css">
+    <style>
+        /* 登录页面特定样式 */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+
+        .login-card {
+            background-color: var(--surface-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-lg);
+            animation: slideUp var(--transition-slow) ease-out;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .login-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            color: var(--text-primary);
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--space-xs);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-footer {
+            margin-top: var(--space-lg);
+            text-align: center;
+        }
+
+        .form-footer p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .form-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.875rem;
+            margin-top: var(--space-xs);
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: var(--space-md);
+            }
+
+            .login-card {
+                padding: var(--space-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>欢迎回来</h1>
+                    <p>登录您的 Michelangelo 账户</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <input type="email" id="email" class="input" placeholder="请输入您的邮箱" required>
+                        <div class="error-message" id="emailError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" class="input" placeholder="请输入您的密码" required>
+                        <div class="error-message" id="passwordError"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+                </form>
+                <div class="form-footer">
+                    <p>还没有账户？ <a href="/register.html">立即注册</a></p>
+                    <p><a href="/forgot-password.html">忘记密码？</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const emailError = document.getElementById('emailError');
+            const passwordError = document.getElementById('passwordError');
+
+            // 表单验证
+            function validateEmail(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
+            }
+
+            function showError(element, message) {
+                element.textContent = message;
+                element.classList.add('show');
+            }
+
+            function hideError(element) {
+                element.textContent = '';
+                element.classList.remove('show');
+            }
+
+            // 输入验证
+            emailInput.addEventListener('blur', function() {
+                if (!validateEmail(this.value)) {
+                    showError(emailError, '请输入有效的邮箱地址');
+                } else {
+                    hideError(emailError);
+                }
+            });
+
+            passwordInput.addEventListener('blur', function() {
+                if (this.value.length < 6) {
+                    showError(passwordError, '密码长度至少为6位');
+                } else {
+                    hideError(passwordError);
+                }
+            });
+
+            // 表单提交
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                // 验证表单
+                if (!validateEmail(email)) {
+                    showError(emailError, '请输入有效的邮箱地址');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError(passwordError, '密码长度至少为6位');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    if (response.ok) {
+                        window.location.href = '/my.html';
+                    } else {
+                        const data = await response.json();
+                        showError(passwordError, data.message || '登录失败，请重试');
+                    }
+                } catch (error) {
+                    showError(passwordError, '网络错误，请重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

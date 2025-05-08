@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的作品 - Raphael AI</title>
+    <link rel="stylesheet" href="/styles/common.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --background: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* 导航栏 */
+        .header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 0.5rem;
+            min-width: 200px;
+            display: none;
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            text-decoration: none;
+            display: block;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--background);
+        }
+
+        /* 用户中心内容 */
+        .main {
+            max-width: 1200px;
+            margin: 6rem auto 2rem;
+            padding: 0 2rem;
+        }
+
+        .user-profile {
+            margin-bottom: 2rem;
+            animation: slideUp var(--transition) ease-out;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: var(--radius-full);
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 600;
+            transition: transform var(--transition);
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .profile-info p {
+            color: var(--text-light);
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            transition: transform var(--transition);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        /* 作品管理 */
+        .works-section {
+            animation: slideUp var(--transition) ease-out;
+            animation-delay: 100ms;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .work-card {
+            overflow: hidden;
+            transition: all var(--transition);
+        }
+
+        .work-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .work-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform var(--transition);
+        }
+
+        .work-card:hover .work-image {
+            transform: scale(1.05);
+        }
+
+        .work-info {
+            padding: 1rem;
+        }
+
+        .work-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .work-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .work-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .action-btn {
+            composes: btn btn-secondary;
+            flex: 1;
+            padding: 0.5rem;
+        }
+
+        .action-btn.delete {
+            composes: btn btn-danger;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-stats {
+                justify-content: center;
+            }
+            
+            .works-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <nav class="nav">
+            <a href="/" class="logo">Raphael AI</a>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="#features">特性</a>
+                <a href="#faq">常见问题</a>
+            </div>
+            <div class="nav-actions">
+                <div class="user-menu">
+                    <div class="user-avatar">张</div>
+                    <div class="dropdown-menu">
+                        <a href="#" class="dropdown-item">个人资料</a>
+                        <a href="#" class="dropdown-item">账户设置</a>
+                        <a href="#" class="dropdown-item">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 用户中心内容 -->
+    <main class="main">
+        <!-- 用户资料 -->
+        <section class="user-profile card">
+            <div class="profile-header">
+                <div class="profile-avatar">张</div>
+                <div class="profile-info">
+                    <h2>张先生</h2>
+                    <p>zhang@example.com</p>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">128</div>
+                            <div class="stat-label">作品数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">256</div>
+                            <div class="stat-label">获赞数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">64</div>
+                            <div class="stat-label">收藏数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 作品管理 -->
+        <section class="works-section">
+            <div class="section-header">
+                <h2 class="section-title">我的作品</h2>
+            </div>
+            <div class="works-grid">
+                <div class="work-card card">
+                    <img src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538" alt="作品1" class="work-image">
+                    <div class="work-info">
+                        <h3 class="work-title">梦幻风景</h3>
+                        <div class="work-meta">
+                            <span>2024-03-20</span>
+                            <span>写实风格</span>
+                        </div>
+                        <div class="work-actions">
+                            <button class="action-btn">下载</button>
+                            <button class="action-btn">分享</button>
+                            <button class="action-btn delete">删除</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="work-card card">
+                    <img src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538" alt="作品2" class="work-image">
+                    <div class="work-info">
+                        <h3 class="work-title">未来城市</h3>
+                        <div class="work-meta">
+                            <span>2024-03-19</span>
+                            <span>科幻风格</span>
+                        </div>
+                        <div class="work-actions">
+                            <button class="action-btn">下载</button>
+                            <button class="action-btn">分享</button>
+                            <button class="action-btn delete">删除</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="work-card card">
+                    <img src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538" alt="作品3" class="work-image">
+                    <div class="work-info">
+                        <h3 class="work-title">动漫角色</h3>
+                        <div class="work-meta">
+                            <span>2024-03-18</span>
+                            <span>动漫风格</span>
+                        </div>
+                        <div class="work-actions">
+                            <button class="action-btn">下载</button>
+                            <button class="action-btn">分享</button>
+                            <button class="action-btn delete">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 用户菜单交互
+            const userAvatar = document.querySelector('.user-avatar');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+
+            userAvatar.addEventListener('click', () => {
+                dropdownMenu.classList.toggle('active');
+            });
+
+            // 点击其他地方关闭菜单
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-menu')) {
+                    dropdownMenu.classList.remove('active');
+                }
+            });
+
+            // 作品操作
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const action = this.textContent;
+                    const workCard = this.closest('.work-card');
+                    const workTitle = workCard.querySelector('.work-title').textContent;
+
+                    if (action === '删除') {
+                        if (confirm(`确定要删除作品"${workTitle}"吗？`)) {
+                            // 显示加载状态
+                            this.classList.add('loading');
+                            this.disabled = true;
+
+                            try {
+                                // 这里添加删除API调用
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟API调用
+
+                                // 显示成功消息
+                                const toast = document.createElement('div');
+                                toast.className = 'toast success';
+                                toast.textContent = '作品删除成功';
+                                document.body.appendChild(toast);
+
+                                // 移除作品卡片
+                                workCard.style.opacity = '0';
+                                workCard.style.transform = 'translateY(20px)';
+                                setTimeout(() => {
+                                    workCard.remove();
+                                }, 300);
+                            } catch (error) {
+                                // 显示错误消息
+                                const toast = document.createElement('div');
+                                toast.className = 'toast error';
+                                toast.textContent = '删除失败，请稍后重试';
+                                document.body.appendChild(toast);
+                            } finally {
+                                // 移除加载状态
+                                this.classList.remove('loading');
+                                this.disabled = false;
+                            }
+                        }
+                    } else if (action === '下载') {
+                        // 显示加载状态
+                        this.classList.add('loading');
+                        this.disabled = true;
+
+                        try {
+                            // 这里添加下载逻辑
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟下载
+
+                            // 显示成功消息
+                            const toast = document.createElement('div');
+                            toast.className = 'toast success';
+                            toast.textContent = '下载成功';
+                            document.body.appendChild(toast);
+                        } catch (error) {
+                            // 显示错误消息
+                            const toast = document.createElement('div');
+                            toast.className = 'toast error';
+                            toast.textContent = '下载失败，请稍后重试';
+                            document.body.appendChild(toast);
+                        } finally {
+                            // 移除加载状态
+                            this.classList.remove('loading');
+                            this.disabled = false;
+                        }
+                    } else if (action === '分享') {
+                        // 显示加载状态
+                        this.classList.add('loading');
+                        this.disabled = true;
+
+                        try {
+                            // 这里添加分享逻辑
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟分享
+
+                            // 显示成功消息
+                            const toast = document.createElement('div');
+                            toast.className = 'toast success';
+                            toast.textContent = '分享成功';
+                            document.body.appendChild(toast);
+                        } catch (error) {
+                            // 显示错误消息
+                            const toast = document.createElement('div');
+                            toast.className = 'toast error';
+                            toast.textContent = '分享失败，请稍后重试';
+                            document.body.appendChild(toast);
+                        } finally {
+                            // 移除加载状态
+                            this.classList.remove('loading');
+                            this.disabled = false;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

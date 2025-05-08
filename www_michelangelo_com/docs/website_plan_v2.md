@@ -1,5 +1,7 @@
 # Michelangelo.com 网站规划文档 V2
 
+# 在《忍者神龟》中，角色 Michelangelo 简称：“Mikey”，所以我决定给这个网站使用 Mikey.app
+
 ## 一、功能规划
 
 ### 第一期功能（MVP）

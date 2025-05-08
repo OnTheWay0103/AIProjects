@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 图像生成 - Michelangelo</title>
+    <link rel="stylesheet" href="/styles/common.css">
+    <style>
+        /* 生成器页面特定样式 */
+        .generator-page {
+            min-height: 100vh;
+            background-color: var(--background);
+            padding: var(--space-xl) 0;
+        }
+
+        .generator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+        }
+
+        .generator-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .generator-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+        }
+
+        .generator-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .generator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-xl);
+            margin-bottom: var(--space-xl);
+        }
+
+        .prompt-section {
+            background-color: var(--surface-color);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .prompt-header {
+            margin-bottom: var(--space-md);
+        }
+
+        .prompt-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .prompt-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .prompt-input {
+            width: 100%;
+            min-height: 120px;
+            padding: var(--space-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-md);
+            resize: vertical;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        .option-group {
+            margin-bottom: var(--space-md);
+        }
+
+        .option-label {
+            display: block;
+            margin-bottom: var(--space-xs);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .option-select {
+            width: 100%;
+            padding: var(--space-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--background);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: var(--space-md);
+            font-size: 1.125rem;
+        }
+
+        .result-section {
+            background-color: var(--surface-color);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: var(--radius-md);
+            display: none;
+        }
+
+        .result-image.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .generator-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .generator-title {
+                font-size: 2rem;
+            }
+
+            .generator-subtitle {
+                font-size: 1.125rem;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <header class="header">
+        <nav class="nav">
+            <a href="/" class="logo">Michelangelo</a>
+            <div class="nav-actions">
+                <button class="language-switch">EN</button>
+                <a href="/login.html" class="login-btn">登录</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 生成器页面 -->
+    <main class="generator-page">
+        <div class="generator-container">
+            <div class="generator-header">
+                <h1 class="generator-title">AI 图像生成器</h1>
+                <p class="generator-subtitle">用文字描述您的创意，让 AI 为您生成惊艳的图像</p>
+            </div>
+
+            <div class="generator-grid">
+                <!-- 提示词输入区域 -->
+                <div class="prompt-section">
+                    <div class="prompt-header">
+                        <h2 class="prompt-title">描述您的图像</h2>
+                        <p class="prompt-description">用详细的语言描述您想要的图像，越详细越好</p>
+                    </div>
+                    <textarea class="prompt-input" placeholder="例如：一只可爱的橘猫在阳光下打盹，背景是绿色的草地，风格写实"></textarea>
+                    
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label class="option-label">图像比例</label>
+                            <select class="option-select">
+                                <option value="square">正方形</option>
+                                <option value="portrait">竖版</option>
+                                <option value="landscape">横版</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label class="option-label">风格</label>
+                            <select class="option-select">
+                                <option value="realistic">写实</option>
+                                <option value="anime">动漫</option>
+                                <option value="oil">油画</option>
+                                <option value="digital">数字艺术</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary generate-btn">生成图像</button>
+                </div>
+
+                <!-- 结果展示区域 -->
+                <div class="result-section">
+                    <div class="result-placeholder">
+                        <p>输入提示词并点击生成按钮</p>
+                        <p>AI 将为您创建图像</p>
+                    </div>
+                    <img class="result-image" src="" alt="生成的图像">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>正在生成图像...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.querySelector('.generate-btn');
+            const promptInput = document.querySelector('.prompt-input');
+            const resultImage = document.querySelector('.result-image');
+            const resultPlaceholder = document.querySelector('.result-placeholder');
+            const loading = document.querySelector('.loading');
+
+            generateBtn.addEventListener('click', async function() {
+                const prompt = promptInput.value.trim();
+                if (!prompt) {
+                    alert('请输入图像描述');
+                    return;
+                }
+
+                // 显示加载状态
+                resultPlaceholder.style.display = 'none';
+                resultImage.style.display = 'none';
+                loading.classList.add('show');
+
+                try {
+                    const response = await fetch('/api/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            style: document.querySelector('.option-select[value="style"]').value,
+                            aspect: document.querySelector('.option-select[value="aspect"]').value
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        resultImage.src = data.imageUrl;
+                        resultImage.classList.add('show');
+                    } else {
+                        alert('生成失败，请重试');
+                    }
+                } catch (error) {
+                    alert('网络错误，请重试');
+                } finally {
+                    loading.classList.remove('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

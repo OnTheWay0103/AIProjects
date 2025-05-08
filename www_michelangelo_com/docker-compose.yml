@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mikey-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: your_secure_password
+      MONGO_INITDB_DATABASE: mikey
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - mikey-network
+    restart: unless-stopped
+    command: mongod --bind_ip_all
+
+volumes:
+  mongodb_data:
+    name: mikey-mongodb-data
+
+networks:
+  mikey-network:
+    name: mikey-network 

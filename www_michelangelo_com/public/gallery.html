@@ -208,78 +208,161 @@
         <nav class="nav">
             <a href="/" class="logo">Michelangelo</a>
             <div class="nav-links">
-                <a href="/">生成图像</a>
-                <a href="#">关于</a>
+                <a href="/gallery.html" class="active">画廊</a>
             </div>
         </nav>
     </header>
 
     <main class="main">
-        <section class="hero">
-            <h1>AI 图像画廊</h1>
-            <p>探索由 AI 生成的精美图像作品</p>
+        <section class="gallery-filters" style="max-width: 900px; margin: 2rem auto 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <div>
+                <label style="font-weight: 500; margin-right: 0.5rem;">风格</label>
+                <select id="filter-style" style="padding: 0.5rem; border-radius: 0.5rem;">
+                    <option value="">全部</option>
+                    <option value="realistic">写实</option>
+                    <option value="anime">动漫</option>
+                    <option value="oil-painting">油画</option>
+                    <option value="watercolor">水彩</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 500; margin-right: 0.5rem;">比例</label>
+                <select id="filter-ratio" style="padding: 0.5rem; border-radius: 0.5rem;">
+                    <option value="">全部</option>
+                    <option value="1:1">1:1</option>
+                    <option value="3:4">3:4</option>
+                    <option value="4:3">4:3</option>
+                    <option value="9:16">9:16</option>
+                    <option value="16:9">16:9</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 500; margin-right: 0.5rem;">时间</label>
+                <select id="filter-time" style="padding: 0.5rem; border-radius: 0.5rem;">
+                    <option value="">全部</option>
+                    <option value="today">今天</option>
+                    <option value="week">本周</option>
+                    <option value="month">本月</option>
+                </select>
+            </div>
         </section>
 
-        <div class="loading" id="loading"></div>
-        <div class="error" id="error"></div>
-        <div class="gallery" id="gallery"></div>
-        <div class="empty-state" id="emptyState" style="display: none;">
-            <h2>画廊空空如也</h2>
-            <p>还没有生成任何图像，快去创建您的第一幅作品吧！</p>
-            <a href="/">开始生成</a>
-        </div>
+        <section class="gallery-grid" style="max-width: 1100px; margin: 0 auto 2rem;">
+            <div id="gallery" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+                <!-- 图片卡片将由JS动态插入 -->
+            </div>
+            <div class="empty-state" id="emptyState" style="display: none; text-align: center; margin: 3rem 0;">
+                <h2>画廊空空如也</h2>
+                <p>还没有生成任何图像，快去创建您的第一幅作品吧！</p>
+                <a href="/" style="color: #2563eb;">开始生成</a>
+            </div>
+        </section>
     </main>
+
+    <!-- 大图预览弹窗（初始隐藏） -->
+    <div id="imageModal" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;flex-direction:column;">
+        <span id="modalClose" style="position:absolute;top:2rem;right:2rem;font-size:2.5rem;color:#fff;cursor:pointer;">&times;</span>
+        <img id="modalImg" src="" alt="大图预览" style="max-width:90vw;max-height:70vh;border-radius:1rem;box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+        <div id="modalPrompt" style="color:#fff;text-align:center;margin-top:1.5rem;font-size:1.2rem;"></div>
+        <!-- 下载与分享按钮区 -->
+        <div style="margin-top:1.5rem;display:flex;gap:1.5rem;justify-content:center;">
+            <button id="modalDownload" style="padding:0.7rem 1.5rem;font-size:1rem;border:none;border-radius:0.5rem;background:#2563eb;color:#fff;cursor:pointer;">下载图片</button>
+            <button id="modalCopy" style="padding:0.7rem 1.5rem;font-size:1rem;border:none;border-radius:0.5rem;background:#1e40af;color:#fff;cursor:pointer;">复制链接</button>
+        </div>
+        <!-- 复制提示 -->
+        <div id="modalCopyTip" style="color:#fff;margin-top:1rem;font-size:1rem;display:none;">已复制到剪贴板！</div>
+    </div>
+
+    <footer style="background: #f8fafc; text-align: center; padding: 2rem 0; color: #64748b; font-size: 1rem;">
+        © 2024 Michelangelo.com | <a href="#" style="color: #2563eb;">隐私政策</a> | <a href="#" style="color: #2563eb;">使用条款</a>
+    </footer>
 
     <script>
         async function loadGallery() {
             const gallery = document.getElementById('gallery');
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
             const emptyState = document.getElementById('emptyState');
-
-            loading.style.display = 'block';
-            error.style.display = 'none';
-            emptyState.style.display = 'none';
             gallery.innerHTML = '';
+            emptyState.style.display = 'none';
+
+            const style = document.getElementById('filter-style').value;
+            const ratio = document.getElementById('filter-ratio').value;
+            const time = document.getElementById('filter-time').value;
+
+            let url = '/api/gallery';
 
             try {
-                const response = await fetch('/api/gallery');
+                const response = await fetch(url);
                 const data = await response.json();
 
-                if (data.success) {
-                    if (data.data.length === 0) {
-                        emptyState.style.display = 'block';
-                    } else {
-                        data.data.forEach(item => {
-                            const card = document.createElement('div');
-                            card.className = 'image-card';
-                            card.innerHTML = `
-                                <img src="${item.imageUrl}" alt="${item.prompt}">
-                                <div class="image-info">
-                                    <h3>${item.prompt}</h3>
-                                    <div class="image-meta">
-                                        <span class="style-tag">${item.style}</span>
-                                        <span>${new Date(item.created_at).toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            `;
-                            gallery.appendChild(card);
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'image-card';
+                        card.style = 'background:#fff;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:1rem;text-align:center;cursor:pointer;';
+                        card.innerHTML = `
+                            <img src="${item.imageUrl}" alt="${item.prompt}" style="width:100%;border-radius:0.5rem;margin-bottom:0.5rem;">
+                            <div style="font-size:1rem;font-weight:500;margin-bottom:0.25rem;">${item.prompt}</div>
+                            <div style="color:#64748b;font-size:0.9rem;">
+                                <span style="margin-right:1rem;">${item.style}</span>
+                                <span>${item.ratio || ''}</span>
+                            </div>
+                            <div style="color:#b0b0b0;font-size:0.8rem;margin-top:0.5rem;">${new Date(item.created_at).toLocaleString()}</div>
+                        `;
+                        card.addEventListener('click', () => {
+                            document.getElementById('modalImg').src = item.imageUrl;
+                            document.getElementById('modalPrompt').textContent = item.prompt;
+                            document.getElementById('imageModal').style.display = 'flex';
                         });
-                    }
+                        gallery.appendChild(card);
+                    });
                 } else {
-                    error.textContent = data.error;
-                    error.style.display = 'block';
+                    emptyState.style.display = 'block';
                 }
             } catch (err) {
-                error.textContent = '加载失败，请稍后重试';
-                error.style.display = 'block';
-            } finally {
-                loading.style.display = 'none';
+                emptyState.style.display = 'block';
             }
         }
 
-        // 页面加载时获取画廊数据
+        document.getElementById('filter-style').addEventListener('change', loadGallery);
+        document.getElementById('filter-ratio').addEventListener('change', loadGallery);
+        document.getElementById('filter-time').addEventListener('change', loadGallery);
+
         loadGallery();
+
+        document.getElementById('modalClose').onclick = function() {
+            document.getElementById('imageModal').style.display = 'none';
+        };
+        document.getElementById('imageModal').onclick = function(e) {
+            if (e.target === this) this.style.display = 'none';
+        };
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('imageModal').style.display = 'none';
+            }
+        });
+
+        // 下载图片
+        document.getElementById('modalDownload').onclick = function() {
+            const imgUrl = document.getElementById('modalImg').src;
+            // 创建临时a标签下载
+            const a = document.createElement('a');
+            a.href = imgUrl;
+            a.download = 'AI图片.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // 复制图片链接
+        document.getElementById('modalCopy').onclick = function() {
+            const imgUrl = document.getElementById('modalImg').src;
+            navigator.clipboard.writeText(imgUrl).then(() => {
+                // 显示复制成功提示
+                const tip = document.getElementById('modalCopyTip');
+                tip.style.display = 'block';
+                setTimeout(() => { tip.style.display = 'none'; }, 1500);
+            });
+        };
     </script>
 </body>
 </html> 

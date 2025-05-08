@@ -4,357 +4,267 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Michelangelo - AI 图像生成</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/common.css">
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --background-color: #f8fafc;
-            --text-color: #1e293b;
-            --border-color: #e2e8f0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.5;
-        }
-
-        .header {
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            padding: 1rem 2rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-        }
-
-        .nav {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* 首页特定样式 */
+        .hero-section {
+            min-height: 100vh;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            padding: var(--space-xl) 0;
+            position: relative;
+            overflow: hidden;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .nav-links a {
-            color: var(--text-color);
-            text-decoration: none;
-            margin-left: 2rem;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--primary-color);
-        }
-
-        .main {
+        .hero-content {
             max-width: 1200px;
-            margin: 6rem auto 2rem;
-            padding: 0 2rem;
-        }
-
-        .hero {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            color: #64748b;
-            max-width: 600px;
             margin: 0 auto;
-        }
-
-        .generator {
-            background-color: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        input[type="text"], select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            width: 100%;
-        }
-
-        button:hover {
-            background-color: var(--secondary-color);
-        }
-
-        button:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        #result {
-            margin-top: 2rem;
+            padding: 0 var(--space-xl);
             text-align: center;
+            color: var(--text-light);
+            animation: fadeIn var(--transition-slow) ease-out;
         }
 
-        #generatedImage {
-            max-width: 100%;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+            line-height: 1.2;
         }
 
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 1rem;
+        .hero-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: var(--space-xl);
+            opacity: 0.9;
         }
 
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 1.5rem;
-            height: 1.5rem;
-            border: 3px solid var(--border-color);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s linear infinite;
+        .hero-cta {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+            margin-bottom: var(--space-xl);
         }
 
-        .error {
-            color: #ef4444;
-            margin-top: 1rem;
-            text-align: center;
-            display: none;
+        .stats-section {
+            background-color: var(--surface-color);
+            padding: var(--space-xl) 0;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .style-options {
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-xl);
         }
 
-        .style-option {
-            border: 2px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1rem;
+        .stat-card {
             text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: var(--space-lg);
+            background-color: var(--background);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition), box-shadow var(--transition);
         }
 
-        .style-option:hover {
-            border-color: var(--primary-color);
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
         }
 
-        .style-option.selected {
-            border-color: var(--primary-color);
-            background-color: rgba(37,99,235,0.05);
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--space-xs);
         }
 
-        .style-option img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 0.25rem;
-            margin-bottom: 0.5rem;
+        .stat-label {
+            color: var(--text-secondary);
         }
 
-        .style-option h3 {
-            font-size: 1rem;
+        .reviews-section {
+            padding: var(--space-xl) 0;
+        }
+
+        .reviews-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+        }
+
+        .reviews-title {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .reviews-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-xl);
+        }
+
+        .review-card {
+            background-color: var(--surface-color);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .review-content {
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+        }
+
+        .review-author {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+
+        .author-info {
+            flex: 1;
+        }
+
+        .author-name {
             font-weight: 500;
-            margin-bottom: 0.25rem;
+            color: var(--text-primary);
         }
 
-        .style-option p {
+        .author-title {
             font-size: 0.875rem;
-            color: #64748b;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.125rem;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+            }
+
+            .stats-grid,
+            .reviews-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card,
+            .review-card {
+                padding: var(--space-md);
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 导航栏 -->
     <header class="header">
         <nav class="nav">
             <a href="/" class="logo">Michelangelo</a>
-            <div class="nav-links">
-                <a href="/gallery.html">画廊</a>
-                <a href="#">关于</a>
+            <div class="nav-actions">
+                <button class="language-switch">EN</button>
+                <a href="/login.html" class="login-btn">登录</a>
             </div>
         </nav>
     </header>
 
-    <main class="main">
-        <section class="hero">
-            <h1>AI 图像生成</h1>
-            <p>使用先进的 AI 技术，将您的想象转化为精美的图像</p>
-        </section>
-
-        <section class="generator">
-            <div class="form-group">
-                <label for="prompt">提示词</label>
-                <input type="text" id="prompt" placeholder="描述您想要生成的图像...">
+    <!-- Hero 区域 -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">用 AI 创造无限可能</h1>
+            <p class="hero-subtitle">Michelangelo 让您的创意触手可及，轻松生成高质量图像</p>
+            <div class="hero-cta">
+                <a href="/register.html" class="btn btn-primary">免费开始</a>
+                <a href="#features" class="btn btn-secondary">了解更多</a>
             </div>
+        </div>
+    </section>
 
-            <div class="form-group">
-                <label>风格</label>
-                <div class="style-options" id="styleOptions">
-                    <div class="style-option" data-style="realistic">
-                        <img src="https://via.placeholder.com/150" alt="写实风格">
-                        <h3>写实</h3>
-                        <p>逼真的照片效果</p>
+    <!-- 数据统计 -->
+    <section class="stats-section">
+        <div class="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">10,000+</div>
+                    <div class="stat-label">活跃用户</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100,000+</div>
+                    <div class="stat-label">生成图像</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">4.8</div>
+                    <div class="stat-label">用户评分</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 用户评价 -->
+    <section class="reviews-section">
+        <div class="reviews-container">
+            <h2 class="reviews-title">用户评价</h2>
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <p class="review-content">"Michelangelo 的图像生成质量令人惊叹，完全超出了我的预期。"</p>
+                    <div class="review-author">
+                        <div class="author-avatar"></div>
+                        <div class="author-info">
+                            <div class="author-name">张明</div>
+                            <div class="author-title">设计师</div>
+                        </div>
                     </div>
-                    <div class="style-option" data-style="anime">
-                        <img src="https://via.placeholder.com/150" alt="动漫风格">
-                        <h3>动漫</h3>
-                        <p>日式动漫风格</p>
+                </div>
+                <div class="review-card">
+                    <p class="review-content">"使用体验非常流畅，生成的图像质量很高，完全满足我的需求。"</p>
+                    <div class="review-author">
+                        <div class="author-avatar"></div>
+                        <div class="author-info">
+                            <div class="author-name">李华</div>
+                            <div class="author-title">摄影师</div>
+                        </div>
                     </div>
-                    <div class="style-option" data-style="oil-painting">
-                        <img src="https://via.placeholder.com/150" alt="油画风格">
-                        <h3>油画</h3>
-                        <p>古典油画效果</p>
-                    </div>
-                    <div class="style-option" data-style="watercolor">
-                        <img src="https://via.placeholder.com/150" alt="水彩风格">
-                        <h3>水彩</h3>
-                        <p>水彩画效果</p>
+                </div>
+                <div class="review-card">
+                    <p class="review-content">"作为一个创意工作者，Michelangelo 已经成为我日常工作中不可或缺的工具。"</p>
+                    <div class="review-author">
+                        <div class="author-avatar"></div>
+                        <div class="author-info">
+                            <div class="author-name">王芳</div>
+                            <div class="author-title">插画师</div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <button onclick="generateImage()" id="generateButton">生成图像</button>
-            <div class="loading" id="loading"></div>
-            <div class="error" id="error"></div>
-            <div id="result">
-                <img id="generatedImage" alt="生成的图像">
-            </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
     <script>
-        // 风格选择
-        const styleOptions = document.querySelectorAll('.style-option');
-        let selectedStyle = 'realistic';
-
-        styleOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                styleOptions.forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                selectedStyle = option.dataset.style;
+        document.addEventListener('DOMContentLoaded', function() {
+            // 语言切换功能
+            const languageSwitch = document.querySelector('.language-switch');
+            languageSwitch.addEventListener('click', function() {
+                const currentLang = this.textContent;
+                this.textContent = currentLang === 'EN' ? '中文' : 'EN';
             });
         });
-
-        // 默认选中第一个风格
-        styleOptions[0].classList.add('selected');
-
-        async function generateImage() {
-            const prompt = document.getElementById('prompt').value;
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const image = document.getElementById('generatedImage');
-            const generateButton = document.getElementById('generateButton');
-
-            if (!prompt) {
-                error.textContent = '请输入提示词';
-                error.style.display = 'block';
-                return;
-            }
-
-            loading.style.display = 'block';
-            error.style.display = 'none';
-            image.style.display = 'none';
-            generateButton.disabled = true;
-
-            try {
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ prompt, style: selectedStyle }),
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    image.src = data.data.imageUrl;
-                    image.style.display = 'block';
-                } else {
-                    error.textContent = data.error;
-                    error.style.display = 'block';
-                }
-            } catch (err) {
-                error.textContent = '生成失败，请稍后重试';
-                error.style.display = 'block';
-            } finally {
-                loading.style.display = 'none';
-                generateButton.disabled = false;
-            }
-        }
     </script>
 </body>
 </html> 
