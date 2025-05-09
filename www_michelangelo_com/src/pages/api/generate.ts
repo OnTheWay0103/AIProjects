@@ -1,49 +1,75 @@
-import type { NextApiResponse } from 'next';
-import Replicate from 'replicate';
-import { withAuth } from '@/middleware/withAuth';
-import type { AuthenticatedRequest } from '@/middleware/withAuth';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
-async function handler(
-  req: AuthenticatedRequest,
+export default async function handler(
+  req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  try {
-    const { prompt } = req.body;
+  const { prompt } = req.body;
 
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
+  if (!prompt) {
+    return res.status(400).json({ error: '提示词不能为空' });
+  }
+
+  try {
+    // 调用 Stability AI API
+    const response = await fetch(
+      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
+        },
+        body: JSON.stringify({
+          text_prompts: [
+            {
+              text: prompt,
+              weight: 1
+            }
+          ],
+          cfg_scale: 7,
+          height: 1024,
+          width: 1024,
+          samples: 1,
+          steps: 30,
+          style_preset: "photographic"
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error('Stability API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+      throw new Error(`Stability API error: ${response.statusText}`);
     }
 
-    // 调用 Replicate API 生成图片
-    const output = await replicate.run(
-      "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-      {
-        input: {
-          prompt,
-          num_outputs: 1,
-          scheduler: "K_EULER",
-          num_inference_steps: 50,
-          guidance_scale: 7.5,
-          width: 1024,
-          height: 1024,
-        }
-      }
-    ) as string[];
+    const result = await response.json();
+    
+    if (!result.artifacts?.[0]?.base64) {
+      throw new Error('Invalid response format from Stability API');
+    }
 
-    // 返回生成的图片URL
-    return res.status(200).json({ imageUrl: output[0] });
+    const imageUrl = `data:image/png;base64,${result.artifacts[0].base64}`;
+
+    return res.status(200).json({
+      image: {
+        url: imageUrl
+      }
+    });
   } catch (error) {
     console.error('Error generating image:', error);
-    return res.status(500).json({ error: 'Failed to generate image' });
+    return res.status(500).json({ 
+      error: '生成图片失败，请重试',
+      details: error instanceof Error ? error.message : '未知错误'
+    });
   }
-}
-
-export default withAuth(handler); 
+} 

@@ -2,9 +2,14 @@ export interface GeneratedImage {
   id: string;
   prompt: string;
   imageUrl: string;
-  userId: string;
-  isPublic: boolean;
   createdAt: string;
+  userId: string;
+}
+
+export interface GenerateImageResponse {
+  image: {
+    url: string;
+  };
 }
 
 export interface ImageGenerationResponse {

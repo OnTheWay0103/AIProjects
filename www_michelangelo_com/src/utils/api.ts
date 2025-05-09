@@ -219,11 +219,18 @@ export async function getPublicImages(): Promise<{ images: GeneratedImage[] }> {
   return response.json();
 }
 
-export async function generateImage(prompt: string): Promise<{ image: GeneratedImage }> {
-  return fetchWithAuth<{ image: GeneratedImage }>(`${API_URL}/images/generate`, {
-    method: 'POST',
-    body: JSON.stringify({ prompt }),
-  });
+export async function generateImage(prompt: string): Promise<GenerateImageResponse> {
+  try {
+    const response = await fetchWithAuth<GenerateImageResponse>('/api/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Error generating image:', error);
+    throw error;
+  }
 }
 
 export async function saveImage(data: {

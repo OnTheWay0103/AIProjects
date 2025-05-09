@@ -1,134 +1,102 @@
-import Head from 'next/head';
 import { useState } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/router';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import Head from 'next/head';
+import { useAuth } from '@/contexts/AuthContext';
 import { generateImage } from '@/utils/api';
-import type { GeneratedImage } from '@/types/image';
-import Toast from '@/components/ui/Toast';
 
 export default function Generate() {
-  const router = useRouter();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: 'success' | 'error' | 'info';
-  } | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!prompt.trim()) {
+      setError('请输入提示词');
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
-    setGeneratedImage(null);
 
     try {
-      const { image } = await generateImage(prompt);
-      setGeneratedImage(image);
-      setToast({
-        message: '图片生成成功',
-        type: 'success',
-      });
+      const response = await generateImage(prompt.trim());
+      setGeneratedImage(response.image.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '生成失败，请稍后重试');
-      setToast({
-        message: '生成失败，请稍后重试',
-        type: 'error',
-      });
+      setError(err instanceof Error ? err.message : '生成失败，请重试');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleViewImage = () => {
-    if (generatedImage) {
-      router.push(`/images/${generatedImage.id}`);
-    }
-  };
-
   return (
-    <ProtectedRoute>
+    <>
       <Head>
         <title>生成图片 - Mikey.app</title>
-        <meta name="description" content="使用AI生成图片" />
+        <meta name="description" content="使用 AI 生成精美图片" />
       </Head>
 
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">生成图片</h1>
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-text-primary">
+              使用 AI 生成图片
+            </h1>
+            <p className="mt-2 text-text-secondary">
+              输入提示词，让 AI 为您创作精美的图片
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">输入提示词</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="prompt" className="block text-sm font-medium mb-2">
-                  描述您想要生成的图片
-                </label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="prompt" className="block text-sm font-medium text-text-primary">
+                提示词
+              </label>
+              <div className="mt-1">
                 <textarea
                   id="prompt"
+                  name="prompt"
+                  rows={4}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="input h-32 resize-none"
-                  placeholder="例如：一只可爱的猫咪在阳光下玩耍"
-                  required
+                  className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                  placeholder="描述您想要生成的图片，例如：一只可爱的猫咪在阳光下玩耍"
                 />
               </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
+
+            <div>
               <button
                 type="submit"
-                disabled={isGenerating || !prompt.trim()}
-                className="btn btn-primary w-full"
+                disabled={isGenerating}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
               >
                 {isGenerating ? '生成中...' : '生成图片'}
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
 
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">预览</h2>
-            {isGenerating ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+          {generatedImage && (
+            <div className="mt-8">
+              <h2 className="text-lg font-medium text-text-primary mb-4">生成结果</h2>
+              <div className="relative aspect-square w-full max-w-lg mx-auto">
+                <img
+                  src={generatedImage}
+                  alt="生成的图片"
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                />
               </div>
-            ) : error ? (
-              <div className="text-error text-center py-8">{error}</div>
-            ) : generatedImage ? (
-              <div>
-                <div className="relative aspect-square w-full mb-4">
-                  <Image
-                    src={generatedImage.imageUrl}
-                    alt={generatedImage.prompt}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
-                </div>
-                <p className="text-sm text-text-secondary line-clamp-2 mb-4">
-                  {generatedImage.prompt}
-                </p>
-                <button
-                  onClick={handleViewImage}
-                  className="btn btn-primary w-full"
-                >
-                  查看详情
-                </button>
-              </div>
-            ) : (
-              <div className="text-center text-text-secondary py-12">
-                <p className="text-lg mb-4">输入提示词开始生成图片</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </ProtectedRoute>
+    </>
   );
 } 
