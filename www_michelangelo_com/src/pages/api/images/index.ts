@@ -1,84 +1,61 @@
-import type { NextApiResponse } from 'next';
-import { withAuth } from '@/middleware/withAuth';
-import type { AuthenticatedRequest } from '@/middleware/withAuth';
-import type { GeneratedImage } from '@/types/image';
-import { Image } from '@/models/Image';
-import { connectDB } from '@/utils/db';
-import type { Document, Types } from 'mongoose';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
+import prisma from '@/lib/prisma';
 
-interface ImageDocument extends Document {
-  _id: Types.ObjectId;
-  prompt: string;
-  imageUrl: string;
-  userId: string;
-  createdAt: Date;
-}
-
-async function handler(
-  req: AuthenticatedRequest,
-  res: NextApiResponse<{ images: GeneratedImage[] } | { error: string } | { id: string }>
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
-  if (req.method === 'GET') {
-    try {
-      const userId = req.user?.userId;
+  const session = await getServerSession(req, res, authOptions);
 
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      await connectDB();
-
-      const images = await Image.find({ userId })
-        .sort({ createdAt: -1 })
-        .lean();
-
-      return res.status(200).json({
-        images: images.map((image: ImageDocument) => ({
-          id: image._id.toString(),
-          prompt: image.prompt,
-          imageUrl: image.imageUrl,
-          createdAt: image.createdAt.toISOString(),
-          userId: image.userId.toString(),
-        })),
-      });
-    } catch (error) {
-      console.error('Error fetching images:', error);
-      return res.status(500).json({ error: 'Failed to fetch images' });
-    }
+  if (!session) {
+    return res.status(401).json({ error: '未登录' });
   }
 
-  if (req.method === 'POST') {
-    try {
-      const userId = req.user?.userId;
+  const userId = session.user.id;
 
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+  switch (req.method) {
+    case 'GET':
+      try {
+        const images = await prisma.image.findMany({
+          where: {
+            userId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
+        return res.status(200).json(images);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+        return res.status(500).json({ error: '获取图片列表失败' });
       }
 
-      const { prompt, imageUrl } = req.body;
+    case 'POST':
+      try {
+        const { url, prompt } = req.body;
 
-      if (!prompt || !imageUrl) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        if (!url || !prompt) {
+          return res.status(400).json({ error: '缺少必要参数' });
+        }
+
+        const image = await prisma.image.create({
+          data: {
+            url,
+            prompt,
+            userId,
+          },
+        });
+
+        return res.status(201).json(image);
+      } catch (error) {
+        console.error('Error creating image:', error);
+        return res.status(500).json({ error: '保存图片失败' });
       }
 
-      await connectDB();
-
-      const image = await Image.create({
-        prompt,
-        imageUrl,
-        userId,
-      });
-
-      return res.status(201).json({
-        id: image._id.toString(),
-      });
-    } catch (error) {
-      console.error('Error saving image:', error);
-      return res.status(500).json({ error: 'Failed to save image' });
-    }
+    default:
+      res.setHeader('Allow', ['GET', 'POST']);
+      return res.status(405).json({ error: `方法 ${req.method} 不允许` });
   }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-export default withAuth(handler); 
+} 

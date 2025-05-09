@@ -1,75 +1,66 @@
-import type { NextApiResponse } from 'next';
-import { withAuth } from '@/middleware/withAuth';
-import type { AuthenticatedRequest } from '@/middleware/withAuth';
-import { Image } from '@/models/Image';
-import { connectDB } from '@/utils/db';
-import mongoose from 'mongoose';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
+import prisma from '@/lib/prisma';
 
-async function handler(
-  req: AuthenticatedRequest,
-  res: NextApiResponse<{ image: any } | { success: boolean } | { error: string }>
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
+  const session = await getServerSession(req, res, authOptions);
+
+  if (!session) {
+    return res.status(401).json({ error: '未登录' });
+  }
+
   const { id } = req.query;
-  const userId = req.user?.userId;
+  const userId = session.user.id;
 
-  if (!userId) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // 检查图片是否存在且属于当前用户
+  const image = await prisma.image.findFirst({
+    where: {
+      id: id as string,
+      userId,
+    },
+  });
+
+  if (!image) {
+    return res.status(404).json({ error: '图片不存在' });
   }
 
-  if (!mongoose.Types.ObjectId.isValid(id as string)) {
-    return res.status(400).json({ error: 'Invalid image ID' });
-  }
-
-  await connectDB();
-
-  if (req.method === 'GET') {
-    try {
-      const image = await Image.findOne({
-        _id: id,
-        userId,
-      });
-
-      if (!image) {
-        return res.status(404).json({ error: 'Image not found' });
+  switch (req.method) {
+    case 'DELETE':
+      try {
+        await prisma.image.delete({
+          where: {
+            id: id as string,
+          },
+        });
+        return res.status(200).json({ message: '删除成功' });
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        return res.status(500).json({ error: '删除图片失败' });
       }
 
-      return res.status(200).json({
-        image: {
-          id: image._id.toString(),
-          prompt: image.prompt,
-          imageUrl: image.imageUrl,
-          userId: image.userId.toString(),
-          isPublic: image.isPublic,
-          createdAt: image.createdAt.toISOString(),
-        },
-      });
-    } catch (error) {
-      console.error('Error fetching image:', error);
-      return res.status(500).json({ error: 'Failed to fetch image' });
-    }
-  }
-
-  if (req.method === 'DELETE') {
-    try {
-      const image = await Image.findOne({
-        _id: id,
-        userId,
-      });
-
-      if (!image) {
-        return res.status(404).json({ error: 'Image not found' });
+    case 'PATCH':
+      try {
+        const { isPublic } = req.body;
+        const updatedImage = await prisma.image.update({
+          where: {
+            id: id as string,
+          },
+          data: {
+            isPublic,
+          },
+        });
+        return res.status(200).json(updatedImage);
+      } catch (error) {
+        console.error('Error updating image:', error);
+        return res.status(500).json({ error: '更新图片失败' });
       }
 
-      await image.deleteOne();
-
-      return res.status(200).json({ success: true });
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      return res.status(500).json({ error: 'Failed to delete image' });
-    }
+    default:
+      res.setHeader('Allow', ['DELETE', 'PATCH']);
+      return res.status(405).json({ error: `方法 ${req.method} 不允许` });
   }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-export default withAuth(handler); 
+} 
