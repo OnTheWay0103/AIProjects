@@ -29,15 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await loginApi(email, password);
       const { token, user } = response;
       
-      // 确保user对象包含所有必需的字段
-      const userWithCreatedAt: User = {
-        ...user,
-        createdAt: user.createdAt || new Date().toISOString()
-      };
-      
-      // 先保存状态
-      setUser(userWithCreatedAt);
-      storage.setUser(userWithCreatedAt);
+      // 保存状态
+      setUser(user);
+      storage.setUser(user);
       storage.setToken(token);
 
       // 等待状态更新完成后再跳转
@@ -53,14 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await registerApi(name, email, password);
       const { token, user } = response;
       
-      // 确保user对象包含所有必需的字段
-      const userWithCreatedAt: User = {
-        ...user,
-        createdAt: user.createdAt || new Date().toISOString()
-      };
-      
-      setUser(userWithCreatedAt);
-      storage.setUser(userWithCreatedAt);
+      setUser(user);
+      storage.setUser(user);
       storage.setToken(token);
       router.push('/');
     } catch (error) {

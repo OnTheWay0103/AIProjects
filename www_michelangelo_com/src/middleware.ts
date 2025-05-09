@@ -3,23 +3,32 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                    request.nextUrl.pathname.startsWith('/register');
+  const path = request.nextUrl.pathname;
+  
+  // 定义公开路由和认证路由
+  const publicRoutes = ['/', '/explore', '/generate'];
+  const authRoutes = ['/login', '/register'];
+  const dashboardRoutes = ['/images', '/settings'];
+  
+  const isPublicRoute = publicRoutes.includes(path);
+  const isAuthRoute = authRoutes.includes(path);
+  const isDashboardRoute = dashboardRoutes.includes(path);
   
   console.log('Middleware check:', {
-    path: request.nextUrl.pathname,
+    path,
     hasToken: !!token,
-    isAuthPage
+    isAuthRoute,
+    isDashboardRoute
   });
 
-  // 如果是认证页面且已登录，重定向到首页
-  if (isAuthPage && token) {
+  // 如果是认证路由且已登录，重定向到首页
+  if (isAuthRoute && token) {
     console.log('Redirecting authenticated user from auth page to home');
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // 如果不是认证页面且未登录，重定向到登录页
-  if (!isAuthPage && !token) {
+  // 如果是仪表板路由且未登录，重定向到登录页
+  if (isDashboardRoute && !token) {
     console.log('Redirecting unauthenticated user to login page');
     return NextResponse.redirect(new URL('/login', request.url));
   }

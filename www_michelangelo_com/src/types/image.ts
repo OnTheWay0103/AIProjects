@@ -1,27 +1,37 @@
-export interface GeneratedImage {
-  id: string;
+import mongoose, { Model } from 'mongoose';
+
+interface IImage {
   prompt: string;
   imageUrl: string;
-  createdAt: string;
-  userId: string;
+  userId: mongoose.Types.ObjectId;
+  isPublic: boolean;
+  createdAt: Date;
 }
 
-export interface GenerateImageResponse {
-  image: {
-    url: string;
-  };
-}
+type ImageModel = Model<IImage>;
 
-export interface ImageGenerationResponse {
-  imageUrl: string;
-}
+const imageSchema = new mongoose.Schema<IImage, ImageModel>({
+  prompt: {
+    type: String,
+    required: true,
+  },
+  imageUrl: {
+    type: String,
+    required: true,
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-export interface SaveImageRequest {
-  prompt: string;
-  imageUrl: string;
-}
-
-export interface SaveImageResponse {
-  id: string;
-  imageUrl: string;
-} 
+export const Image = (mongoose.models.Image || mongoose.model<IImage>('Image', imageSchema)) as ImageModel; 

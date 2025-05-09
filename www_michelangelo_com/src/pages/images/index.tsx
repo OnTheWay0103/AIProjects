@@ -1,160 +1,190 @@
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Image from 'next/image';
-import Layout from '@/components/Layout';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { getImages, deleteImage, shareImage, unshareImage } from '@/utils/api';
+import type { GeneratedImage } from '@/types/image';
+import Toast from '@/components/ui/Toast';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
-interface Image {
-  id: string;
-  url: string;
-  prompt: string;
-  createdAt: string;
-  isPublic: boolean;
-}
+export default function Images() {
+  const [images, setImages] = useState<GeneratedImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    imageId: string | null;
+  }>({
+    isOpen: false,
+    imageId: null,
+  });
 
-export default function ImagesPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [images, setImages] = useState<Image[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    const fetchImages = async () => {
-      try {
-        const response = await fetch('/api/images');
-        if (!response.ok) {
-          throw new Error('获取图片失败');
-        }
-        const data = await response.json();
-        setImages(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '获取图片失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (session) {
-      fetchImages();
-    }
-  }, [session]);
-
-  const handleDelete = async (imageId: string) => {
-    if (!confirm('确定要删除这张图片吗？')) {
-      return;
-    }
-
+  const loadImages = async () => {
     try {
-      const response = await fetch(`/api/images/${imageId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('删除图片失败');
-      }
-
-      setImages(images.filter(image => image.id !== imageId));
+      const { images } = await getImages();
+      setImages(images);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除图片失败');
+      setError(err instanceof Error ? err.message : '加载失败，请稍后重试');
+      setToast({
+        message: '加载失败，请稍后重试',
+        type: 'error',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleShare = async (imageId: string) => {
+  useEffect(() => {
+    loadImages();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      imageId: id,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.imageId) return;
+
+    setIsDeleting(deleteDialog.imageId);
+    setError(null);
+
     try {
-      const response = await fetch(`/api/images/${imageId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isPublic: true,
-        }),
+      await deleteImage(deleteDialog.imageId);
+      setImages((prevImages) => prevImages.filter((image) => image.id !== deleteDialog.imageId));
+      setToast({
+        message: '删除成功',
+        type: 'success',
       });
-
-      if (!response.ok) {
-        throw new Error('分享图片失败');
-      }
-
-      setImages(images.map(image => 
-        image.id === imageId 
-          ? { ...image, isPublic: true }
-          : image
-      ));
     } catch (err) {
-      setError(err instanceof Error ? err.message : '分享图片失败');
+      setError(err instanceof Error ? err.message : '删除失败，请稍后重试');
+      setToast({
+        message: '删除失败，请稍后重试',
+        type: 'error',
+      });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
-  if (status === 'loading' || loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleShare = async (id: string, isPublic: boolean) => {
+    setIsSharing(id);
+    setError(null);
+
+    try {
+      if (isPublic) {
+        await unshareImage(id);
+        setImages((prevImages) =>
+          prevImages.map((image) =>
+            image.id === id ? { ...image, isPublic: false } : image
+          )
+        );
+        setToast({
+          message: '已取消分享',
+          type: 'success',
+        });
+      } else {
+        await shareImage(id);
+        setImages((prevImages) =>
+          prevImages.map((image) =>
+            image.id === id ? { ...image, isPublic: true } : image
+          )
+        );
+        setToast({
+          message: '分享成功',
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失败，请稍后重试');
+      setToast({
+        message: '操作失败，请稍后重试',
+        type: 'error',
+      });
+    } finally {
+      setIsSharing(null);
+    }
+  };
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">我的图片</h1>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
+    <ProtectedRoute>
+      <Head>
+        <title>我的图片 - Mikey.app</title>
+        <meta name="description" content="查看您生成的所有图片" />
+      </Head>
 
-        {images.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">还没有生成过图片</p>
-            <button
-              onClick={() => router.push('/generate')}
-              className="mt-4 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-            >
-              去生成图片
-            </button>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">我的图片</h1>
+          <Link href="/generate" className="btn btn-primary">
+            生成新图片
+          </Link>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="text-error text-center">{error}</div>
+        ) : images.length === 0 ? (
+          <div className="text-center text-text-secondary py-12">
+            <p className="text-lg mb-4">您还没有生成任何图片</p>
+            <Link href="/generate" className="btn btn-primary">
+              开始生成
+            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {images.map((image) => (
-              <div key={image.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="relative h-64">
+              <div key={image.id} className="card">
+                <div className="relative aspect-square w-full mb-4">
                   <Image
-                    src={image.url}
+                    src={image.imageUrl}
                     alt={image.prompt}
                     fill
-                    className="object-cover"
+                    className="object-cover rounded-lg"
                   />
                 </div>
-                <div className="p-4">
-                  <p className="text-gray-600 mb-2">{image.prompt}</p>
-                  <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-text-secondary line-clamp-2">
+                  {image.prompt}
+                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-text-secondary">
                     {new Date(image.createdAt).toLocaleString()}
                   </p>
-                  <div className="flex justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleShare(image.id, image.isPublic)}
+                      disabled={isSharing === image.id}
+                      className={`text-sm ${
+                        image.isPublic
+                          ? 'text-primary hover:text-opacity-80'
+                          : 'text-text-secondary hover:text-primary'
+                      }`}
+                    >
+                      {isSharing === image.id
+                        ? '处理中...'
+                        : image.isPublic
+                        ? '取消分享'
+                        : '分享'}
+                    </button>
                     <button
                       onClick={() => handleDelete(image.id)}
-                      className="text-red-500 hover:text-red-700"
+                      disabled={isDeleting === image.id}
+                      className="text-error hover:text-opacity-80 text-sm"
                     >
-                      删除
+                      {isDeleting === image.id ? '删除中...' : '删除'}
                     </button>
-                    {!image.isPublic && (
-                      <button
-                        onClick={() => handleShare(image.id)}
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        分享
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -162,6 +192,24 @@ export default function ImagesPage() {
           </div>
         )}
       </div>
-    </Layout>
+
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, imageId: null })}
+        onConfirm={confirmDelete}
+        title="删除图片"
+        message="确定要删除这张图片吗？此操作无法撤销。"
+        confirmText="删除"
+        cancelText="取消"
+      />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </ProtectedRoute>
   );
 } 
