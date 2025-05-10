@@ -15,13 +15,14 @@ const mockApi = {
 };
 
 // 模拟模块
-jest.mock('../src/utils/storage', () => ({
+jest.mock('../src/lib/utils/storage', () => ({
   storage: mockStorage
 }));
-jest.mock('../src/utils/api', () => mockApi);
+jest.mock('../src/lib/api/api', () => mockApi);
 
 // 导入模拟后的模块
-const { AuthProvider, useAuth } = require('../src/contexts/AuthContext');
+const { AuthProvider } = require('../src/store/contexts/AuthContext');
+const { useAuth } = require('../src/hooks/auth/useAuth');
 
 // 测试组件
 const TestComponent = () => {

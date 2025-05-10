@@ -1,69 +1,41 @@
-import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
-import { useRouter } from 'next/router';
-import { login as loginApi, register as registerApi } from '@/utils/api';
-import { storage } from '@/utils/storage';
-import { User } from '@/types/user';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  updateProfile: (data: { username: string; email: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    const storedUser = storage.getUser();
+    // 模拟从localStorage获取用户信息
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(storedUser);
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await loginApi(email, password);
-      const { token, user } = response;
-      
-      // 保存状态
-      setUser(user);
-      storage.setUser(user);
-      storage.setToken(token);
-
-      // 等待状态更新完成后再跳转
-      await new Promise(resolve => setTimeout(resolve, 100));
-      router.push('/');
-    } catch (error) {
-      throw error;
+  const updateProfile = async (data: { username: string; email: string }) => {
+    if (!user) {
+      throw new Error('用户未登录');
     }
-  };
-
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      const response = await registerApi(name, email, password);
-      const { token, user } = response;
-      
-      setUser(user);
-      storage.setUser(user);
-      storage.setToken(token);
-      router.push('/');
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-    storage.clear();
-    router.push('/login');
+    // 模拟API调用
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

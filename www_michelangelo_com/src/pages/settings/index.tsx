@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import { useState } from 'react';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/features/auth/ProtectedRoute';
+import { useAuth } from '@/hooks/auth/useAuth';
 import Toast from '@/components/ui/Toast';
 
 export default function Settings() {

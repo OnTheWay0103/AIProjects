@@ -1,3 +1,4 @@
+const { generateImage, getImages, getPublicImages, shareImage, unshareImage, deleteImage } = require('../src/lib/api/api');
 const axios = require('axios');
 
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -5,164 +6,187 @@ const API_BASE_URL = 'http://localhost:3000/api';
 // 模拟 axios
 jest.mock('axios');
 
+// 模拟 fetch
+global.fetch = jest.fn();
+
 describe('API Tests', () => {
   beforeEach(() => {
-    // 清除所有模拟函数的调用记录
     jest.clearAllMocks();
   });
 
-  // 测试登录 API
-  test('登录 API 应该正常工作', async () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      name: 'testuser',
-    };
-    const mockResponse = {
-      data: {
-        user: mockUser,
-        token: 'mockToken',
-      },
-    };
+  describe('generateImage', () => {
+    test('成功生成图片', async () => {
+      const mockResponse = {
+        image: {
+          url: 'https://example.com/image.jpg'
+        }
+      };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      });
 
-    axios.post.mockResolvedValueOnce(mockResponse);
-
-    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-      email: 'test@example.com',
-      password: 'password123',
+      const result = await generateImage('一只可爱的猫咪');
+      expect(result).toEqual(mockResponse);
+      expect(global.fetch).toHaveBeenCalledWith('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: '一只可爱的猫咪' })
+      });
     });
 
-    expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}/auth/login`, {
-      email: 'test@example.com',
-      password: 'password123',
+    test('生成失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: '请求失败' })
+      });
+
+      await expect(generateImage('一只可爱的猫咪')).rejects.toThrow('请求失败');
     });
-    expect(response.data.user).toEqual(mockUser);
-    expect(response.data.token).toBe('mockToken');
   });
 
-  // 测试注册 API
-  test('注册 API 应该正常工作', async () => {
-    const mockUser = {
-      id: '1',
-      email: 'test@example.com',
-      name: 'testuser',
-    };
-    const mockResponse = {
-      data: {
-        user: mockUser,
-        token: 'mockToken',
-      },
-    };
+  describe('getImages', () => {
+    test('成功获取图片列表', async () => {
+      const mockImages = {
+        images: [
+          {
+            id: '1',
+            imageUrl: 'https://example.com/image1.jpg',
+            prompt: '一只可爱的猫咪',
+            createdAt: new Date().toISOString(),
+            isPublic: false
+          }
+        ]
+      };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockImages)
+      });
 
-    axios.post.mockResolvedValueOnce(mockResponse);
-
-    const response = await axios.post(`${API_BASE_URL}/auth/register`, {
-      name: 'testuser',
-      email: 'test@example.com',
-      password: 'password123',
+      const result = await getImages();
+      expect(result).toEqual(mockImages);
+      expect(global.fetch).toHaveBeenCalledWith('/api/images', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     });
 
-    expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}/auth/register`, {
-      name: 'testuser',
-      email: 'test@example.com',
-      password: 'password123',
+    test('获取失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: '请求失败' })
+      });
+
+      await expect(getImages()).rejects.toThrow('请求失败');
     });
-    expect(response.data.user).toEqual(mockUser);
-    expect(response.data.token).toBe('mockToken');
   });
 
-  // 测试生成图片 API
-  test('生成图片 API 应该正常工作', async () => {
-    const mockImage = {
-      id: '1',
-      url: 'https://example.com/image.jpg',
-      prompt: '一只可爱的猫咪',
-      createdAt: '2024-05-09T10:00:00Z',
-    };
-    const mockResponse = {
-      data: mockImage,
-    };
+  describe('getPublicImages', () => {
+    test('成功获取公开图片列表', async () => {
+      const mockImages = {
+        images: [
+          {
+            id: '1',
+            imageUrl: 'https://example.com/image1.jpg',
+            prompt: '一只可爱的猫咪',
+            createdAt: new Date().toISOString(),
+            isPublic: true
+          }
+        ]
+      };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockImages)
+      });
 
-    axios.post.mockResolvedValueOnce(mockResponse);
-
-    const response = await axios.post(`${API_BASE_URL}/images/generate`, {
-      prompt: '一只可爱的猫咪',
+      const result = await getPublicImages();
+      expect(result).toEqual(mockImages);
+      expect(global.fetch).toHaveBeenCalledWith('/api/images/public');
     });
 
-    expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}/images/generate`, {
-      prompt: '一只可爱的猫咪',
+    test('获取失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: 'Failed to fetch public images' })
+      });
+
+      await expect(getPublicImages()).rejects.toThrow('Failed to fetch public images');
     });
-    expect(response.data).toEqual(mockImage);
   });
 
-  // 测试获取图片列表 API
-  test('获取图片列表 API 应该正常工作', async () => {
-    const mockImages = [
-      {
-        id: '1',
-        url: 'https://example.com/image1.jpg',
-        prompt: '一只可爱的猫咪',
-        createdAt: '2024-05-09T10:00:00Z',
-      },
-      {
-        id: '2',
-        url: 'https://example.com/image2.jpg',
-        prompt: '一只可爱的狗狗',
-        createdAt: '2024-05-09T11:00:00Z',
-      },
-    ];
-    const mockResponse = {
-      data: mockImages,
-    };
+  describe('shareImage', () => {
+    test('成功分享图片', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      });
 
-    axios.get.mockResolvedValueOnce(mockResponse);
+      await shareImage('1');
+      expect(global.fetch).toHaveBeenCalledWith('/api/images/1/share', {
+        method: 'POST'
+      });
+    });
 
-    const response = await axios.get(`${API_BASE_URL}/images`);
+    test('分享失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: 'Failed to share image' })
+      });
 
-    expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/images`);
-    expect(response.data).toEqual(mockImages);
+      await expect(shareImage('1')).rejects.toThrow('Failed to share image');
+    });
   });
 
-  // 测试获取用户图片列表 API
-  test('获取用户图片列表 API 应该正常工作', async () => {
-    const mockImages = [
-      {
-        id: '1',
-        url: 'https://example.com/image1.jpg',
-        prompt: '一只可爱的猫咪',
-        createdAt: '2024-05-09T10:00:00Z',
-      },
-      {
-        id: '2',
-        url: 'https://example.com/image2.jpg',
-        prompt: '一只可爱的狗狗',
-        createdAt: '2024-05-09T11:00:00Z',
-      },
-    ];
-    const mockResponse = {
-      data: mockImages,
-    };
+  describe('unshareImage', () => {
+    test('成功取消分享图片', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      });
 
-    axios.get.mockResolvedValueOnce(mockResponse);
+      await unshareImage('1');
+      expect(global.fetch).toHaveBeenCalledWith('/api/images/1/share', {
+        method: 'DELETE'
+      });
+    });
 
-    const response = await axios.get(`${API_BASE_URL}/images/user`);
+    test('取消分享失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: 'Failed to unshare image' })
+      });
 
-    expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/images/user`);
-    expect(response.data).toEqual(mockImages);
+      await expect(unshareImage('1')).rejects.toThrow('Failed to unshare image');
+    });
   });
 
-  // 测试删除图片 API
-  test('删除图片 API 应该正常工作', async () => {
-    const mockResponse = {
-      data: { success: true },
-    };
+  describe('deleteImage', () => {
+    test('成功删除图片', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      });
 
-    axios.delete.mockResolvedValueOnce(mockResponse);
+      await deleteImage('1');
+      expect(global.fetch).toHaveBeenCalledWith('/api/images/1', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    });
 
-    const response = await axios.delete(`${API_BASE_URL}/images/1`);
+    test('删除失败时抛出错误', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: '请求失败' })
+      });
 
-    expect(axios.delete).toHaveBeenCalledWith(`${API_BASE_URL}/images/1`);
-    expect(response.data.success).toBe(true);
+      await expect(deleteImage('1')).rejects.toThrow('请求失败');
+    });
   });
 });
 

@@ -2,8 +2,8 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
-import { storage } from '@/utils/storage';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { storage } from '@/lib/utils/storage';
 
 export default function Login() {
   const router = useRouter();

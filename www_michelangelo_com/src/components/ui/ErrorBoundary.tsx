@@ -23,6 +23,10 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error('Uncaught error:', error, errorInfo);
   }
 
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
   public render() {
     if (this.state.hasError) {
       return (
@@ -33,8 +37,9 @@ export default class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || '发生了一些错误'}
             </p>
             <button
-              onClick={() => this.setState({ hasError: false, error: null })}
+              onClick={this.handleRetry}
               className="btn btn-primary w-full"
+              data-testid="retry-button"
             >
               重试
             </button>

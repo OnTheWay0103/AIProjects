@@ -1,29 +1,31 @@
+const React = require('react');
 require('@testing-library/jest-dom');
 
-// 模拟 next/router
+// Mock next/router
 jest.mock('next/router', () => ({
-  useRouter() {
-    return {
-      route: '/',
-      pathname: '',
-      query: {},
-      asPath: '',
-      push: jest.fn(),
-      replace: jest.fn(),
-    };
-  },
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    pathname: '/',
+    query: {},
+    asPath: '/',
+    events: {
+      on: jest.fn(),
+      off: jest.fn(),
+      emit: jest.fn(),
+    },
+  }),
 }));
 
-// 模拟 next/image
-jest.mock('next/image', () => ({
-  __esModule: true,
-  default: function Image(props) {
-    // eslint-disable-next-line jsx-a11y/alt-text
-    return `<img ${Object.keys(props).map(key => `${key}="${props[key]}"`).join(' ')} />`;
-  },
-}));
+// Mock next/image
+const mockImage = ({ src, alt, ...props }) => {
+  return React.createElement('img', { src, alt, ...props });
+};
+jest.mock('next/image', () => ({ __esModule: true, default: mockImage }));
 
-// 模拟 window.matchMedia
+// Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({

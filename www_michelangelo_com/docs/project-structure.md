@@ -18,15 +18,14 @@ mikey-app/
 ├── public/                    # 静态资源
 │   ├── images/               # 图片资源
 │   ├── fonts/                # 字体文件
-│   ├── locales/              # 国际化文件
 │   └── favicon.ico           # 网站图标
 │
 ├── src/                      # 源代码
-│   ├── app/                  # Next.js 13+ App Router
-│   │   ├── (auth)/          # 认证相关页面
-│   │   ├── (dashboard)/     # 仪表板相关页面
-│   │   ├── api/             # API 路由
-│   │   └── layout.tsx       # 根布局
+│   ├── pages/               # Next.js Pages Router
+│   │   ├── api/            # API 路由
+│   │   ├── _app.tsx        # 应用入口
+│   │   ├── _document.tsx   # 文档配置
+│   │   └── index.tsx       # 首页
 │   │
 │   ├── components/          # React 组件
 │   │   ├── common/          # 通用组件
@@ -43,6 +42,14 @@ mikey-app/
 │   │   ├── utils/          # 工具函数
 │   │   └── constants/      # 常量定义
 │   │
+│   ├── services/           # 服务层
+│   │   ├── api/           # API 服务
+│   │   └── auth/          # 认证服务
+│   │
+│   ├── store/              # 状态管理
+│   │   ├── contexts/       # React Context
+│   │   └── reducers/       # Redux Reducers
+│   │
 │   ├── styles/             # 样式文件
 │   │   ├── globals.css     # 全局样式
 │   │   └── themes/         # 主题配置
@@ -51,14 +58,17 @@ mikey-app/
 │   │   ├── api/           # API 类型
 │   │   └── common/        # 通用类型
 │   │
-│   └── store/              # 状态管理
-│       ├── slices/         # Redux slices
-│       └── index.ts        # Store 配置
+│   └── assets/             # 项目资源
+│       ├── images/         # 图片资源
+│       └── icons/          # 图标资源
 │
 ├── tests/                  # 测试文件
-│   ├── e2e/               # 端到端测试
-│   ├── integration/       # 集成测试
-│   └── unit/              # 单元测试
+│   ├── unit/              # 单元测试
+│   │   ├── components/    # 组件测试
+│   │   ├── hooks/         # Hooks 测试
+│   │   └── utils/         # 工具函数测试
+│   │
+│   └── integration/       # 集成测试
 │
 ├── docs/                   # 项目文档
 │   ├── api/               # API 文档
@@ -93,17 +103,16 @@ mikey-app/
 - `public/`: 存放静态资源文件
   - `images/`: 图片资源
   - `fonts/`: 字体文件
-  - `locales/`: 国际化文件
   - `favicon.ico`: 网站图标
 
 ### 3. 源代码目录
 
-- `src/app/`: Next.js 13+ App Router 页面
+- `src/pages/`: Next.js Pages Router 页面
 
-  - `(auth)/`: 认证相关页面
-  - `(dashboard)/`: 仪表板相关页面
   - `api/`: API 路由
-  - `layout.tsx`: 根布局
+  - `_app.tsx`: 应用入口
+  - `_document.tsx`: 文档配置
+  - `index.tsx`: 首页
 
 - `src/components/`: React 组件
 
@@ -123,6 +132,16 @@ mikey-app/
   - `utils/`: 工具函数
   - `constants/`: 常量定义
 
+- `src/services/`: 服务层
+
+  - `api/`: API 服务
+  - `auth/`: 认证服务
+
+- `src/store/`: 状态管理
+
+  - `contexts/`: React Context
+  - `reducers/`: Redux Reducers
+
 - `src/styles/`: 样式文件
 
   - `globals.css`: 全局样式
@@ -133,16 +152,18 @@ mikey-app/
   - `api/`: API 类型
   - `common/`: 通用类型
 
-- `src/store/`: 状态管理
-  - `slices/`: Redux slices
-  - `index.ts`: Store 配置
+- `src/assets/`: 项目资源
+  - `images/`: 图片资源
+  - `icons/`: 图标资源
 
 ### 4. 测试目录
 
 - `tests/`: 测试文件
-  - `e2e/`: 端到端测试
-  - `integration/`: 集成测试
   - `unit/`: 单元测试
+    - `components/`: 组件测试
+    - `hooks/`: Hooks 测试
+    - `utils/`: 工具函数测试
+  - `integration/`: 集成测试
 
 ### 5. 文档目录
 
@@ -187,7 +208,6 @@ mikey-app/
 
    - 单元测试
    - 集成测试
-   - 端到端测试
 
 6. **文档维护**
 
@@ -199,9 +219,21 @@ mikey-app/
 
    - 敏感配置隔离
    - 环境变量管理
-   - 安全最佳实践
+   - 错误处理规范
 
 8. **性能优化**
-   - 资源优化
+
    - 代码分割
+   - 懒加载
    - 缓存策略
+
+9. **代码质量**
+
+   - ESLint 规范
+   - Prettier 格式化
+   - TypeScript 类型检查
+
+10. **开发流程**
+    - Git 工作流
+    - 代码审查
+    - 持续集成

@@ -2,10 +2,10 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
-import { register } from '@/utils/api';
-import { RegisterData } from '@/types/user';
-import { storage } from '@/utils/storage';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { register } from '@/lib/api/api';
+import { RegisterData } from '@/types/user/index';
+import { storage } from '@/lib/utils/storage';
 
 export default function Register() {
   const router = useRouter();
