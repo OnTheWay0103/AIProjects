@@ -233,17 +233,63 @@ export async function getPublicImages(): Promise<{ images: GeneratedImage[] }> {
   return response.json();
 }
 
-export async function generateImage(prompt: string, style: string = 'realistic'): Promise<GenerateImageResponse> {
+export async function generateImage(prompt: string, style: string = 'realistic', aspect: string = 'square'): Promise<GenerateImageResponse> {
   try {
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('提示词不能为空');
     }
 
-    console.log('开始生成图像:', { prompt, style });
+    console.log('开始生成图像:', { prompt, style, aspect });
     
+    // 开发环境模拟生成图像
+    if (process.env.NODE_ENV === 'development' || true) { // 强制使用模拟数据，实际中可以根据环境变量决定
+      console.log('使用模拟生成服务');
+      
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 根据提示词生成一个稳定的哈希值，用于生成一致的随机图像
+      const hash = Array.from(prompt).reduce((acc, char) => {
+        return acc + char.charCodeAt(0);
+      }, 0);
+      
+      // 根据不同的风格选择不同的图像服务
+      let imageUrl = '';
+      const seed = hash % 1000;
+      const width = aspect === 'landscape' || aspect === 'widescreen' ? 800 : 600;
+      const height = aspect === 'portrait' ? 800 : aspect === 'square' ? width : 450;
+      
+      switch (style) {
+        case 'anime':
+          imageUrl = `https://picsum.photos/seed/anime${seed}/${width}/${height}`;
+          break;
+        case 'oil':
+          imageUrl = `https://picsum.photos/seed/oil${seed}/${width}/${height}`;
+          break;
+        case 'watercolor':
+          imageUrl = `https://picsum.photos/seed/water${seed}/${width}/${height}`;
+          break;
+        case 'sketch':
+          imageUrl = `https://picsum.photos/seed/sketch${seed}/${width}/${height}`;
+          break;
+        case 'digital':
+          imageUrl = `https://picsum.photos/seed/digital${seed}/${width}/${height}`;
+          break;
+        default:
+          imageUrl = `https://picsum.photos/seed/real${seed}/${width}/${height}`;
+      }
+      
+      return {
+        image: {
+          url: imageUrl
+        }
+      };
+    }
+    
+    // 真实环境调用后端API
     const response = await fetchWithAuth<GenerateImageResponse>('/api/generate', {
       method: 'POST',
-      body: JSON.stringify({ prompt, style }),
+      body: JSON.stringify({ prompt, style, aspect }),
     });
 
     console.log('生成图像响应:', response);
