@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useAuth } from '@/hooks/auth/useAuth';
 import GenerateForm from '@/components/features/generate/GenerateForm';
 import GenerateHistory from '@/components/features/generate/GenerateHistory';
+import GenerateProgress from '@/components/features/generate/GenerateProgress';
 import ImageFilterControls, { ImageFilters } from '@/components/ui/ImageFilterControls';
 import ShareImageModal from '@/components/modals/ShareImageModal';
 import type { GeneratedImage } from '@/types/image/index';
@@ -26,6 +27,9 @@ export default function Generate() {
     filter: 'none'
   });
   const [showShareModal, setShowShareModal] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressComplete, setProgressComplete] = useState(false);
+  const [isCancelled, setIsCancelled] = useState(false);
 
   useEffect(() => {
     // 这里应该是获取用户的生成历史记录
@@ -61,6 +65,8 @@ export default function Generate() {
     setCurrentPrompt(prompt);
     setCurrentStyle(style);
     setIsGenerating(false);
+    setProgressPercent(100);
+    setProgressComplete(true);
     setDownloadReady(true);
     setShowFilters(false);
     
@@ -108,8 +114,26 @@ export default function Generate() {
 
   const handleGenerateStart = () => {
     setIsGenerating(true);
+    setProgressPercent(0);
+    setProgressComplete(false);
+    setIsCancelled(false);
     setDownloadReady(false);
     setShowFilters(false);
+    
+    // 模拟进度更新
+    const interval = setInterval(() => {
+      setProgressPercent(prev => {
+        if (prev >= 100 || isCancelled) {
+          clearInterval(interval);
+          return prev;
+        }
+        // 越接近100，增长越慢
+        const increment = prev < 50 ? 5 : prev < 80 ? 3 : prev < 95 ? 1 : 0.5;
+        return Math.min(prev + increment, 99.5);
+      });
+    }, 200);
+    
+    return () => clearInterval(interval);
   };
 
   const handleDownload = () => {
@@ -197,6 +221,12 @@ export default function Generate() {
     return { filter: filterValue };
   };
 
+  const handleCancelGeneration = () => {
+    setIsCancelled(true);
+    setIsGenerating(false);
+    // 在实际应用中，这里应该调用API取消生成
+  };
+
   return (
     <>
       <Head>
@@ -205,6 +235,11 @@ export default function Generate() {
       </Head>
 
       <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        {/* 测试标记 - 如果能看到这个文本，说明热更新正常工作 */}
+        <div className="bg-red-500 text-white p-4 mb-4 text-center">
+          测试信息：这是一个测试标记，如果您能看到此消息，说明页面更新正常
+        </div>
+        
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-text-primary">
@@ -239,74 +274,75 @@ export default function Generate() {
                 <h2 className="text-lg font-medium text-text-primary mb-4">生成结果</h2>
                 
                 {isGenerating ? (
-                  <div className="flex flex-col items-center justify-center aspect-square w-full bg-background-secondary rounded-lg">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-3"></div>
-                    <p className="text-text-secondary">
-                      正在生成图片，请稍候...
-                    </p>
+                  <div className="flex flex-col items-center justify-center w-full">
+                    <GenerateProgress 
+                      progress={progressPercent} 
+                      isComplete={progressComplete}
+                      onCancel={handleCancelGeneration}
+                    />
+                    <div className="aspect-square w-full bg-background-secondary rounded-lg mt-4 flex items-center justify-center">
+                      <div className="text-text-secondary">
+                        正在生成图片，请稍候...
+                      </div>
+                    </div>
                   </div>
                 ) : generatedImage ? (
-                  <div className="space-y-4">
-                    <div className="relative aspect-square w-full mx-auto bg-background-secondary rounded-lg overflow-hidden">
+                  <div className="flex flex-col space-y-2">
+                    <div className="relative aspect-square w-full bg-background-secondary rounded-lg overflow-hidden">
                       <img
                         src={generatedImage}
-                        alt="生成的图片"
-                        className="w-full h-full object-contain rounded-lg shadow-lg"
+                        alt={currentPrompt}
+                        className="object-cover w-full h-full"
                         style={getFilterStyle()}
                       />
-                    </div>
-                    
-                    {currentPrompt && (
-                      <div className="mt-2 p-3 bg-background-secondary rounded-md">
-                        <p className="text-sm text-text-secondary line-clamp-3">
-                          {currentPrompt}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <button 
-                        onClick={handleDownload}
-                        disabled={!downloadReady}
-                        className="px-3 py-1 bg-primary text-white rounded-md text-sm disabled:opacity-50"
-                      >
-                        下载图片
-                      </button>
-                      <button 
-                        onClick={() => setShowFilters(!showFilters)}
-                        disabled={!downloadReady}
-                        className="px-3 py-1 bg-surface border border-primary text-primary rounded-md text-sm disabled:opacity-50"
-                      >
-                        {showFilters ? '隐藏滤镜' : '编辑滤镜'}
-                      </button>
-                      {user && (
-                        <>
-                          <button 
-                            onClick={handleSave}
-                            disabled={!downloadReady}
-                            className="px-3 py-1 bg-surface border border-primary text-primary rounded-md text-sm disabled:opacity-50"
+                      {downloadReady && (
+                        <div className="absolute bottom-2 right-2 flex space-x-1">
+                          <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className="p-2 bg-white/80 rounded-full hover:bg-white/100 transition-colors"
+                            title="编辑图像"
                           >
-                            保存到收藏
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm5 3a1 1 0 112 0 1 1 0 01-2 0zm1 3a1 1 0 100 2 1 1 0 000-2zm4-3a1 1 0 112 0 1 1 0 01-2 0zm1 3a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+                            </svg>
                           </button>
-                          <button 
+                          <button
+                            onClick={handleDownload}
+                            className="p-2 bg-white/80 rounded-full hover:bg-white/100 transition-colors"
+                            title="下载图像"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <button
                             onClick={handleShare}
-                            disabled={!downloadReady}
-                            className="px-3 py-1 bg-surface border border-primary text-primary rounded-md text-sm disabled:opacity-50"
+                            className="p-2 bg-white/80 rounded-full hover:bg-white/100 transition-colors"
+                            title="分享图像"
                           >
-                            分享
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                            </svg>
                           </button>
-                        </>
+                          {user && (
+                            <button
+                              onClick={handleSave}
+                              className="p-2 bg-white/80 rounded-full hover:bg-white/100 transition-colors"
+                              title="保存到收藏"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                    
                     {showFilters && (
-                      <div className="mt-4">
-                        <ImageFilterControls 
-                          onApplyFilter={handleApplyFilter}
-                          initialFilters={imageFilters}
-                          imageUrl={generatedImage}
-                        />
-                      </div>
+                      <ImageFilterControls
+                        filters={imageFilters}
+                        onFilterChange={handleApplyFilter}
+                      />
                     )}
                   </div>
                 ) : (

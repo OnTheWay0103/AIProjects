@@ -13,8 +13,12 @@ module.exports = {
         background: 'var(--color-background)',
         'text-primary': 'var(--color-text-primary)',
         'text-secondary': 'var(--color-text-secondary)',
+        'text-tertiary': 'var(--color-text-tertiary)',
+        surface: 'var(--color-surface)',
         border: 'var(--color-border)',
         error: 'var(--color-error)',
+        'primary-light': 'var(--color-primary-light)',
+        'primary-dark': 'var(--color-primary-dark)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -41,5 +45,29 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/forms'),
+    function({ addUtilities, matchUtilities, theme }) {
+      addUtilities({
+        '.bg-gradient-radial': {
+          'background-image': 'radial-gradient(var(--tw-gradient-stops))',
+        },
+        '.bg-gradient-radial-at-t': {
+          'background-image': 'radial-gradient(at top, var(--tw-gradient-stops))',
+        },
+        '.bg-gradient-radial-at-b': {
+          'background-image': 'radial-gradient(at bottom, var(--tw-gradient-stops))',
+        },
+        '.bg-gradient-radial-at-l': {
+          'background-image': 'radial-gradient(at left, var(--tw-gradient-stops))',
+        },
+        '.bg-gradient-radial-at-r': {
+          'background-image': 'radial-gradient(at right, var(--tw-gradient-stops))',
+        },
+        '.bg-gradient-radial-at-c': {
+          'background-image': 'radial-gradient(at center, var(--tw-gradient-stops))',
+        },
+      });
+    }
+  ],
 } 

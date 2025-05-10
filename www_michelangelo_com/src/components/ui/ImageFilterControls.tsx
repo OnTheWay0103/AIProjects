@@ -1,194 +1,153 @@
 import React, { useState } from 'react';
 
-interface ImageFilterControlsProps {
-  onApplyFilter: (filters: ImageFilters) => void;
-  initialFilters?: ImageFilters;
-  imageUrl?: string;
-}
-
 export interface ImageFilters {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  blur: number;
-  filter?: string;
+  brightness: number;  // 范围 0-200, 默认 100
+  contrast: number;    // 范围 0-200, 默认 100
+  saturation: number;  // 范围 0-200, 默认 100
+  blur: number;        // 范围 0-10, 默认 0
+  filter: string;      // CSS 滤镜名称, 例如 'sepia', 'grayscale', 'invert', 'none'
 }
 
-const DEFAULT_FILTERS: ImageFilters = {
-  brightness: 100,
-  contrast: 100,
-  saturation: 100,
-  blur: 0,
-  filter: 'none'
-};
+interface ImageFilterControlsProps {
+  filters: ImageFilters;
+  onFilterChange: (filters: ImageFilters) => void;
+}
 
-const PRESET_FILTERS = [
-  { name: '原始', value: 'none', preview: '' },
-  { name: '黑白', value: 'grayscale(100%)', preview: 'grayscale(100%)' },
-  { name: '复古', value: 'sepia(70%)', preview: 'sepia(70%)' },
-  { name: '冷色调', value: 'saturate(1.5) hue-rotate(180deg)', preview: 'saturate(1.5) hue-rotate(180deg)' },
-  { name: '暖色调', value: 'sepia(30%) saturate(1.5) hue-rotate(-30deg)', preview: 'sepia(30%) saturate(1.5) hue-rotate(-30deg)' },
-  { name: '梦幻', value: 'brightness(1.1) contrast(0.9) saturate(1.2) hue-rotate(-10deg)', preview: 'brightness(1.1) contrast(0.9) saturate(1.2) hue-rotate(-10deg)' },
-  { name: '锐化', value: 'contrast(1.5) saturate(1.2)', preview: 'contrast(1.5) saturate(1.2)' },
-  { name: '柔焦', value: 'brightness(1.05) contrast(0.9) saturate(0.9)', preview: 'brightness(1.05) contrast(0.9) saturate(0.9)' },
-  { name: '戏剧', value: 'contrast(1.5) brightness(0.9) saturate(1.5)', preview: 'contrast(1.5) brightness(0.9) saturate(1.5)' },
-];
-
-const ImageFilterControls: React.FC<ImageFilterControlsProps> = ({ 
-  onApplyFilter,
-  initialFilters = DEFAULT_FILTERS,
-  imageUrl
+const ImageFilterControls: React.FC<ImageFilterControlsProps> = ({
+  filters,
+  onFilterChange
 }) => {
-  const [filters, setFilters] = useState<ImageFilters>(initialFilters);
-  const [activeTab, setActiveTab] = useState<'adjustments' | 'presets'>('presets');
-  const [previewFilter, setPreviewFilter] = useState<string | null>(null);
-
-  const handleFilterChange = (name: keyof ImageFilters, value: number | string) => {
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
-    onApplyFilter(newFilters);
+  const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>, filterType: keyof Omit<ImageFilters, 'filter'>) => {
+    const value = parseInt(e.target.value, 10);
+    onFilterChange({
+      ...filters,
+      [filterType]: value
+    });
   };
 
-  const handlePresetClick = (filterValue: string) => {
-    const newFilters = { ...DEFAULT_FILTERS, filter: filterValue };
-    setFilters(newFilters);
-    onApplyFilter(newFilters);
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({
+      ...filters,
+      filter: e.target.value
+    });
   };
 
   const handleReset = () => {
-    setFilters(DEFAULT_FILTERS);
-    onApplyFilter(DEFAULT_FILTERS);
-  };
-
-  const getCSSFilterString = (filters: ImageFilters): string => {
-    const { brightness, contrast, saturation, blur, filter } = filters;
-    
-    let cssFilters = `brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100}) blur(${blur}px)`;
-    
-    if (filter && filter !== 'none') {
-      cssFilters += ` ${filter}`;
-    }
-    
-    return cssFilters;
+    onFilterChange({
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      blur: 0,
+      filter: 'none'
+    });
   };
 
   return (
-    <div className="p-4 bg-surface rounded-lg shadow-sm space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-text-primary">图像调整</h3>
-        <button
-          onClick={handleReset}
-          className="text-sm text-primary hover:text-primary-dark"
-        >
-          重置
-        </button>
-      </div>
-      
-      <div className="flex border-b border-gray-200">
+    <div className="p-4 bg-surface rounded-lg shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-text-primary">调整图像</h3>
         <button 
-          className={`pb-2 px-4 text-sm font-medium ${activeTab === 'presets' ? 'text-primary border-b-2 border-primary' : 'text-text-secondary'}`}
-          onClick={() => setActiveTab('presets')}
+          onClick={handleReset}
+          className="text-xs text-primary hover:text-primary-dark"
         >
-          预设滤镜
-        </button>
-        <button
-          className={`pb-2 px-4 text-sm font-medium ${activeTab === 'adjustments' ? 'text-primary border-b-2 border-primary' : 'text-text-secondary'}`}
-          onClick={() => setActiveTab('adjustments')}
-        >
-          基本调整
+          重置调整
         </button>
       </div>
       
-      {activeTab === 'adjustments' ? (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">亮度: {filters.brightness}%</label>
-            <input
-              type="range"
-              min="50"
-              max="150"
-              value={filters.brightness}
-              onChange={(e) => handleFilterChange('brightness', parseInt(e.target.value))}
-              className="w-full"
-            />
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between">
+            <label htmlFor="brightness" className="block text-sm font-medium text-text-secondary">
+              亮度 ({filters.brightness}%)
+            </label>
+            <span className="text-xs text-text-tertiary">{filters.brightness}%</span>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">对比度: {filters.contrast}%</label>
-            <input
-              type="range"
-              min="50"
-              max="150"
-              value={filters.contrast}
-              onChange={(e) => handleFilterChange('contrast', parseInt(e.target.value))}
-              className="w-full"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">饱和度: {filters.saturation}%</label>
-            <input
-              type="range"
-              min="0"
-              max="200"
-              value={filters.saturation}
-              onChange={(e) => handleFilterChange('saturation', parseInt(e.target.value))}
-              className="w-full"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">模糊: {filters.blur}px</label>
-            <input
-              type="range"
-              min="0"
-              max="10"
-              step="0.5"
-              value={filters.blur}
-              onChange={(e) => handleFilterChange('blur', parseFloat(e.target.value))}
-              className="w-full"
-            />
-          </div>
+          <input 
+            type="range" 
+            id="brightness" 
+            min="0" 
+            max="200" 
+            step="5"
+            value={filters.brightness} 
+            onChange={(e) => handleRangeChange(e, 'brightness')}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+          />
         </div>
-      ) : (
-        <div className="py-2">
-          <div className="grid grid-cols-3 gap-3">
-            {PRESET_FILTERS.map((presetFilter) => (
-              <button
-                key={presetFilter.value}
-                onClick={() => handlePresetClick(presetFilter.value)}
-                onMouseEnter={() => setPreviewFilter(presetFilter.preview)}
-                onMouseLeave={() => setPreviewFilter(null)}
-                className={`p-0 rounded-md overflow-hidden ${filters.filter === presetFilter.value ? 'ring-2 ring-primary' : ''}`}
-              >
-                <div className="relative pb-[100%]">
-                  {imageUrl ? (
-                    <img 
-                      src={imageUrl} 
-                      alt={presetFilter.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      style={{ filter: presetFilter.preview }}
-                    />
-                  ) : (
-                    <div 
-                      className="absolute inset-0 bg-gray-200 flex items-center justify-center"
-                      style={{ filter: presetFilter.preview }}
-                    >
-                      <span className="text-xs text-gray-600">预览</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-1 text-center bg-gray-100">
-                  <span className="text-xs font-medium">{presetFilter.name}</span>
-                </div>
-              </button>
-            ))}
+        
+        <div>
+          <div className="flex justify-between">
+            <label htmlFor="contrast" className="block text-sm font-medium text-text-secondary">
+              对比度
+            </label>
+            <span className="text-xs text-text-tertiary">{filters.contrast}%</span>
           </div>
+          <input 
+            type="range" 
+            id="contrast" 
+            min="0" 
+            max="200" 
+            step="5"
+            value={filters.contrast} 
+            onChange={(e) => handleRangeChange(e, 'contrast')}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+          />
         </div>
-      )}
-      
-      <div className="text-xs text-gray-500 mt-2">
-        CSS滤镜值: <code className="bg-gray-100 px-1 py-0.5 rounded">{getCSSFilterString(filters)}</code>
+        
+        <div>
+          <div className="flex justify-between">
+            <label htmlFor="saturation" className="block text-sm font-medium text-text-secondary">
+              饱和度
+            </label>
+            <span className="text-xs text-text-tertiary">{filters.saturation}%</span>
+          </div>
+          <input 
+            type="range" 
+            id="saturation" 
+            min="0" 
+            max="200" 
+            step="5"
+            value={filters.saturation} 
+            onChange={(e) => handleRangeChange(e, 'saturation')}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+          />
+        </div>
+        
+        <div>
+          <div className="flex justify-between">
+            <label htmlFor="blur" className="block text-sm font-medium text-text-secondary">
+              模糊度
+            </label>
+            <span className="text-xs text-text-tertiary">{filters.blur}px</span>
+          </div>
+          <input 
+            type="range" 
+            id="blur" 
+            min="0" 
+            max="10" 
+            step="0.5"
+            value={filters.blur} 
+            onChange={(e) => handleRangeChange(e, 'blur')}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="filter" className="block text-sm font-medium text-text-secondary mb-1">
+            滤镜效果
+          </label>
+          <select
+            id="filter"
+            value={filters.filter}
+            onChange={handleFilterChange}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+          >
+            <option value="none">无滤镜</option>
+            <option value="sepia(0.7)">复古</option>
+            <option value="grayscale(1)">黑白</option>
+            <option value="invert(0.8)">反色</option>
+            <option value="hue-rotate(90deg)">色相旋转</option>
+          </select>
+        </div>
       </div>
     </div>
   );

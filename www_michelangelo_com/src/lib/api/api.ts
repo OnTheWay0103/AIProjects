@@ -233,16 +233,40 @@ export async function getPublicImages(): Promise<{ images: GeneratedImage[] }> {
   return response.json();
 }
 
-export async function generateImage(prompt: string, style: string = 'realistic', aspect: string = 'square'): Promise<GenerateImageResponse> {
+export interface GenerateParams {
+  colorStyle?: string;
+  lighting?: string;
+  composition?: string;
+  quality?: string;
+}
+
+export async function generateImage(
+  prompt: string, 
+  style: string = 'realistic', 
+  aspect: string = 'square', 
+  negativePrompt: string = '',
+  params: GenerateParams = {}
+): Promise<GenerateImageResponse> {
   try {
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('提示词不能为空');
     }
 
-    console.log('开始生成图像:', { prompt, style, aspect });
+    const { colorStyle, lighting, composition, quality } = params;
+    
+    console.log('开始生成图像:', { 
+      prompt, 
+      style, 
+      aspect, 
+      negativePrompt,
+      colorStyle,
+      lighting,
+      composition,
+      quality
+    });
     
     // 开发环境模拟生成图像
-    if (process.env.NODE_ENV === 'development' || true) { // 强制使用模拟数据，实际中可以根据环境变量决定
+    if (process.env.NODE_ENV === 'development') { // 移除强制使用模拟数据的标志
       console.log('使用模拟生成服务');
       
       // 模拟网络延迟
@@ -287,9 +311,18 @@ export async function generateImage(prompt: string, style: string = 'realistic',
     }
     
     // 真实环境调用后端API
-    const response = await fetchWithAuth<GenerateImageResponse>('/api/generate', {
+    const response = await fetchWithAuth<GenerateImageResponse>(`${API_URL}/generate`, {
       method: 'POST',
-      body: JSON.stringify({ prompt, style, aspect }),
+      body: JSON.stringify({ 
+        prompt, 
+        style, 
+        aspect, 
+        negativePrompt,
+        colorStyle,
+        lighting,
+        composition,
+        quality
+      }),
     });
 
     console.log('生成图像响应:', response);

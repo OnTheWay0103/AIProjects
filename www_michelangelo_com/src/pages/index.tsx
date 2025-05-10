@@ -7,6 +7,22 @@ export default function Home() {
 
   return (
     <>
+      {/* 紧急测试标记 */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'red',
+        color: 'white',
+        padding: '20px',
+        fontSize: '24px',
+        textAlign: 'center',
+        zIndex: 9999
+      }}>
+        紧急测试：如果您能看到此消息，说明更新生效了
+      </div>
+
       <Head>
         <title>Mikey.app - AI 图像生成服务</title>
         <meta name="description" content="世界上第一个完全免费的 AI 图像生成器" />
