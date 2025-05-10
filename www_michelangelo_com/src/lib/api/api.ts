@@ -46,8 +46,22 @@ async function fetchWithAuth<T>(url: string, options: RequestInit = {}): Promise
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || '请求失败');
+      const contentType = response.headers.get('content-type');
+      let errorMessage = '请求失败';
+      
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } else {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        }
+      } catch (parseError) {
+        console.error('解析错误响应失败:', parseError);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -219,17 +233,33 @@ export async function getPublicImages(): Promise<{ images: GeneratedImage[] }> {
   return response.json();
 }
 
-export async function generateImage(prompt: string): Promise<GenerateImageResponse> {
+export async function generateImage(prompt: string, style: string = 'realistic'): Promise<GenerateImageResponse> {
   try {
+    if (!prompt || typeof prompt !== 'string') {
+      throw new Error('提示词不能为空');
+    }
+
+    console.log('开始生成图像:', { prompt, style });
+    
     const response = await fetchWithAuth<GenerateImageResponse>('/api/generate', {
       method: 'POST',
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, style }),
     });
+
+    console.log('生成图像响应:', response);
+
+    if (!response || !response.image || !response.image.url) {
+      console.error('无效的响应格式:', response);
+      throw new Error('生成图像失败：服务器返回数据格式不正确');
+    }
 
     return response;
   } catch (error) {
-    console.error('Error generating image:', error);
-    throw error;
+    console.error('生成图像失败:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('生成图像失败');
   }
 }
 
