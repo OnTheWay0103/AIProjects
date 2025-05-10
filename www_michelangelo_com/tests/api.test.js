@@ -33,13 +33,19 @@ describe('API Tests', () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ prompt: '一只可爱的猫咪' })
+        body: JSON.stringify({ prompt: '一只可爱的猫咪', style: 'realistic' })
       });
     });
 
     test('生成失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: '请求失败' })
       });
 
@@ -77,6 +83,12 @@ describe('API Tests', () => {
     test('获取失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: '请求失败' })
       });
 
@@ -110,6 +122,12 @@ describe('API Tests', () => {
     test('获取失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: 'Failed to fetch public images' })
       });
 
@@ -133,6 +151,12 @@ describe('API Tests', () => {
     test('分享失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: 'Failed to share image' })
       });
 
@@ -156,6 +180,12 @@ describe('API Tests', () => {
     test('取消分享失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: 'Failed to unshare image' })
       });
 
@@ -182,6 +212,12 @@ describe('API Tests', () => {
     test('删除失败时抛出错误', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
+        headers: {
+          get: jest.fn().mockImplementation(name => {
+            if (name === 'content-type') return 'application/json';
+            return null;
+          })
+        },
         json: () => Promise.resolve({ message: '请求失败' })
       });
 
