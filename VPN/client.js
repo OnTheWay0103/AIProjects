@@ -1,5 +1,7 @@
 const net = require('net')
 const tls = require('tls')
+const https = require('https')
+const http = require('http')
 const fs = require('fs')
 const config = require('./env/config')
 const whitelist = require('./whitelist')
@@ -104,11 +106,7 @@ function handleHttpsRequest(clientSocket, target) {
     if (!isDomainInWhitelist(host)) {
         logger.info(`域名 ${host} 不在白名单中,直接连接`)
         // 直接连接到目标服务器
-        const targetSocket = tls.connect({
-            host: host,
-            port: port || 443,
-            rejectUnauthorized: false
-        }, () => {
+        const targetSocket = net.connect(port || 443, host, () => {
             clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
             clientSocket.pipe(targetSocket)
             targetSocket.pipe(clientSocket)
@@ -190,25 +188,76 @@ function handleHttpRequest(clientSocket, requestData) {
     // 检查域名是否在白名单中
     if (!isDomainInWhitelist(targetAddress)) {
         logger.info(`域名 ${targetAddress} 不在白名单中,直接连接`)
-        // 直接连接到目标服务器
-        const targetSocket = net.connect({
-            host: targetAddress,
-            port: 80
-        }, () => {
-            targetSocket.write(requestData)
+        
+        // 解析请求路径
+        const requestPath = path.startsWith('http') ? new URL(path).pathname : path
+        
+        // 创建请求选项
+        const options = {
+            hostname: targetAddress,
+            port: 443,
+            path: requestPath,
+            method: method,
+            headers: {}
+        }
+        
+        // 解析并设置请求头
+        headers.forEach(header => {
+            if (header) {
+                const [key, value] = header.split(': ')
+                if (key && value) {
+                    // 保留所有原始请求头
+                    options.headers[key] = value
+                }
+            }
         })
         
-        targetSocket.on('data', (data) => {
-            clientSocket.write(data)
+        // 确保有必要的请求头
+        if (!options.headers['User-Agent']) {
+            options.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        // 发送HTTPS请求
+        const req = https.request(options, (res) => {
+            // 发送响应状态行
+            clientSocket.write(`HTTP/1.1 ${res.statusCode} ${res.statusMessage}\r\n`)
+            
+            // 发送响应头
+            Object.entries(res.headers).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach(v => {
+                        clientSocket.write(`${key}: ${v}\r\n`)
+                    })
+                } else {
+                    clientSocket.write(`${key}: ${value}\r\n`)
+                }
+            })
+            clientSocket.write('\r\n')
+            
+            // 处理响应体
+            res.on('data', (chunk) => {
+                clientSocket.write(chunk)
+            })
+            
+            res.on('end', () => {
+                clientSocket.end()
+            })
         })
         
-        targetSocket.on('end', () => {
-            clientSocket.end()
+        // 处理请求错误
+        req.on('error', (err) => {
+            handleError(clientSocket, err, 'HTTPS请求错误')
         })
         
-        targetSocket.on('error', (err) => {
-            handleError(clientSocket, err, '目标服务器连接错误')
-        })
+        // 发送请求体
+        if (method !== 'GET' && method !== 'HEAD') {
+            const body = requestData.split('\r\n\r\n')[1]
+            if (body) {
+                req.write(body)
+            }
+        }
+        
+        req.end()
         return
     }
 

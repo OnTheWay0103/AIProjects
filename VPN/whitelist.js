@@ -10,7 +10,9 @@ module.exports = {
         "*.google.com",
         "youtube.com",
         "*.youtube.com",
-        "github.com",
-        "*.github.com"
+        "vercel.com",
+        "*.vercel.com",
+        "telegram.org",
+        "*.telegram.org"
     ]
 } 
