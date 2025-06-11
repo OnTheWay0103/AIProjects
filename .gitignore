@@ -42,3 +42,6 @@ Desktop.ini
 
 # 爬虫数据存储目录
 raw_api_responses/
+
+# 证书文件
+*.pem
