@@ -8,11 +8,13 @@ module.exports = {
         // 示例域名
         "google.com",
         "*.google.com",
-        "youtube.com",
-        "*.youtube.com",
         "vercel.com",
         "*.vercel.com",
-        "telegram.org",
-        "*.telegram.org"
+        "googleapis.com",
+        "*.googleapis.com",
+        "cursor.com",
+        "*.cursor.com",
+        "amazonaws.com",
+        "*.amazonaws.com"
     ]
 } 
