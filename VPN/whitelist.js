@@ -18,3 +18,6 @@ module.exports = {
         "*.amazonaws.com"
     ]
 } 
+
+
+// https://www.softether.org/   其它成熟的VPN工具
