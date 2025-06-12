@@ -16,3 +16,6 @@ module.exports = {
         "*.telegram.org"
     ]
 } 
+
+
+// https://www.softether.org/   其它成熟的VPN工具
