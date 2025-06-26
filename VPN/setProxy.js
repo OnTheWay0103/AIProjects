@@ -1,17 +1,21 @@
-import { exec } from 'child_process';
-import regedit from 'regedit';
-import CONFIG from './const';
+const { exec } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const CONFIG = require('./const');
 
-regedit.setExternalVBSLocation(CONFIG.REGEDIT_VBS_PATH);
+function writeTempFile(lines) {
+  const tmpPath = path.join(os.tmpdir(), `vpn-proxy-${Date.now()}-${Math.random()}.txt`);
+  fs.writeFileSync(tmpPath, lines.join('\r\n'), 'utf8');
+  return tmpPath;
+}
 
-export async function setProxy(host, port) {
+async function setProxy(host, port) {
   if (process.platform === 'darwin') {
     const networks = await getMacAvailableNetworks();
-
     if (networks.length === 0) {
       throw 'no network';
     }
-
     return Promise.all(
       networks.map(network => {
         return new Promise((resolve, reject) => {
@@ -26,30 +30,50 @@ export async function setProxy(host, port) {
       }),
     );
   } else {
-    const valuesToPut = {
-      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings': {
-        ProxyServer: {
-          value: `${host}:${port}`,
-          type: 'REG_SZ',
-        },
-        ProxyEnable: {
-          value: 1,
-          type: 'REG_DWORD',
-        },
-      },
-    };
-    return regedit.promisified.putValue(valuesToPut);
+    const regPutValuePath = path.join(CONFIG.REGEDIT_VBS_PATH, 'regPutValue.wsf');
+    // 1. ProxyServer
+    const proxyServerLines = [
+      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+      'ProxyServer',
+      `${host}:${port}`,
+      'REG_SZ'
+    ];
+    const proxyServerFile = writeTempFile(proxyServerLines);
+    // 2. ProxyEnable
+    const proxyEnableLines = [
+      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+      'ProxyEnable',
+      '1',
+      'REG_DWORD'
+    ];
+    const proxyEnableFile = writeTempFile(proxyEnableLines);
+
+    return new Promise((resolve, reject) => {
+      exec(`cscript //Nologo "${regPutValuePath}" 32 < "${proxyServerFile}"`, (error) => {
+        fs.unlinkSync(proxyServerFile);
+        if (error) {
+          reject(new Error(`设置代理服务器地址失败: ${error.message}`));
+          return;
+        }
+        exec(`cscript //Nologo "${regPutValuePath}" 32 < "${proxyEnableFile}"`, (error) => {
+          fs.unlinkSync(proxyEnableFile);
+          if (error) {
+            reject(new Error(`启用代理失败: ${error.message}`));
+          } else {
+            resolve();
+          }
+        });
+      });
+    });
   }
 }
 
-export async function closeProxy() {
+async function closeProxy() {
   if (process.platform === 'darwin') {
     const networks = await getMacAvailableNetworks();
-
     if (networks.length === 0) {
       throw 'no network';
     }
-
     return Promise.all(
       networks.map(network => {
         return new Promise((resolve, reject) => {
@@ -64,15 +88,25 @@ export async function closeProxy() {
       }),
     );
   } else {
-    const valuesToPut = {
-      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings': {
-        ProxyEnable: {
-          value: 0,
-          type: 'REG_DWORD',
-        },
-      },
-    };
-    return regedit.promisified.putValue(valuesToPut);
+    const regPutValuePath = path.join(CONFIG.REGEDIT_VBS_PATH, 'regPutValue.wsf');
+    // 关闭代理
+    const proxyDisableLines = [
+      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings',
+      'ProxyEnable',
+      '0',
+      'REG_DWORD'
+    ];
+    const proxyDisableFile = writeTempFile(proxyDisableLines);
+    return new Promise((resolve, reject) => {
+      exec(`cscript //Nologo "${regPutValuePath}" 32 < "${proxyDisableFile}"`, (error) => {
+        fs.unlinkSync(proxyDisableFile);
+        if (error) {
+          reject(new Error(`禁用代理失败: ${error.message}`));
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 }
 
@@ -107,3 +141,8 @@ function getMacAvailableNetworks() {
     });
   });
 }
+
+module.exports = {
+  setProxy,
+  closeProxy
+};

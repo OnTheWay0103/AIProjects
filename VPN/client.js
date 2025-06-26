@@ -6,6 +6,11 @@ const fs = require('fs')
 const config = require('./env/config')
 const whitelist = require('./whitelist')
 const logger = require('./utils/logger')
+const { setProxy, closeProxy } = require('./setProxy')
+const path = require('path')
+
+// 存储原始代理设置，用于恢复
+let originalProxySettings = null
 
 // 检查域名是否在白名单中
 function isDomainInWhitelist(domain) {
@@ -29,13 +34,30 @@ function isDomainInWhitelist(domain) {
 
 // 创建TLS连接配置
 function createTlsConfig() {
-    return {
-        host: config.remote.host,
-        port: config.remote.port,
-        key: fs.readFileSync(config.tls.key),
-        cert: fs.readFileSync(config.tls.cert),
-        ca: [fs.readFileSync(config.tls.ca)],
-        rejectUnauthorized: true
+    try {
+        const tlsConfig = {
+            host: config.remote.host,
+            port: config.remote.port,
+            key: fs.readFileSync(path.resolve(config.tls.key)),
+            cert: fs.readFileSync(path.resolve(config.tls.cert)),
+            ca: [fs.readFileSync(path.resolve(config.tls.ca))],
+            rejectUnauthorized: true,  // 启用证书验证
+            // secureProtocol: 'TLSv1_2_method',
+            // ciphers: 'ALL',
+            // 添加更多 TLS 选项
+            // minVersion: 'TLSv1.2',
+            // maxVersion: 'TLSv1.3',
+            // 客户端证书验证
+            requestCert: true,
+            // 添加 SNI 支持
+            servername: config.remote.host
+        }
+        
+        logger.debug(`TLS配置创建成功: ${config.remote.host}:${config.remote.port}`)
+        return tlsConfig
+    } catch (error) {
+        logger.error(`创建TLS配置失败: ${error.message}`)
+        throw error
     }
 }
 
@@ -45,6 +67,60 @@ function handleError(socket, error, context) {
     if (socket && !socket.destroyed) {
         socket.end()
     }
+}
+
+// 设置系统代理
+async function setupSystemProxy() {
+    try {
+        logger.info('正在设置系统代理...')
+        await setProxy('127.0.0.1', config.local.port)
+        logger.info(`系统代理设置成功: 127.0.0.1:${config.local.port}`)
+    } catch (error) {
+        logger.error(`设置系统代理失败: ${error.message}`)
+        throw error
+    }
+}
+
+// 恢复系统代理设置
+async function restoreSystemProxy() {
+    try {
+        logger.info('正在恢复系统代理设置...')
+        await closeProxy()
+        logger.info('系统代理设置已恢复')
+    } catch (error) {
+        logger.error(`恢复系统代理设置失败: ${error.message}`)
+    }
+}
+
+// 处理程序退出信号
+function setupExitHandlers() {
+    const cleanup = async () => {
+        logger.info('正在关闭客户端...')
+        try {
+            await restoreSystemProxy()
+            process.exit(0)
+        } catch (error) {
+            logger.error(`关闭时发生错误: ${error.message}`)
+            process.exit(1)
+        }
+    }
+
+    // 监听各种退出信号
+    process.on('SIGINT', cleanup)   // Ctrl+C
+    process.on('SIGTERM', cleanup)  // 终止信号
+    process.on('SIGQUIT', cleanup)  // 退出信号
+    
+    // 监听未捕获的异常
+    process.on('uncaughtException', async (error) => {
+        logger.error(`未捕获的异常: ${error.message}`)
+        await cleanup()
+    })
+    
+    // 监听未处理的 Promise 拒绝
+    process.on('unhandledRejection', async (reason, promise) => {
+        logger.error(`未处理的 Promise 拒绝: ${reason}`)
+        await cleanup()
+    })
 }
 
 // 创建本地代理服务器
@@ -120,9 +196,13 @@ function handleHttpsRequest(clientSocket, target) {
     // 连接到远程代理服务器
     const remoteSocket = tls.connect(createTlsConfig(), () => {
         logger.info(`已连接到远程代理服务器,目标: ${target}`)
+        logger.debug(`TLS连接状态: authorized=${remoteSocket.authorized}, encrypted=${remoteSocket.encrypted}`)
+        
         if (remoteSocket.authorized) {
             logger.debug('TLS认证成功')
+            logger.debug(`服务器证书: ${remoteSocket.getPeerCertificate().subject.CN || 'Unknown'}`)
         } else {
+            logger.error(`TLS认证失败: ${remoteSocket.authorizationError}`)
             handleError(remoteSocket, new Error(`TLS认证失败: ${remoteSocket.authorizationError}`), 'TLS认证')
             return
         }
@@ -133,15 +213,17 @@ function handleHttpsRequest(clientSocket, target) {
             target: target
         })
 
+        logger.debug(`发送请求到远程服务器: ${jsonData}`)
         remoteSocket.write(jsonData)
 
         // 等待远程服务器响应
         remoteSocket.once('data', (response) => {
             const responseStr = response.toString()
             logger.debug(`收到远程服务器响应: ${responseStr.length} 字节`)
+            logger.debug(`响应内容: ${responseStr.substring(0, 100)}...`)
 
             if (responseStr.startsWith('HTTP/1.1 200')) {
-                // logger.info("隧道建立成功")
+                logger.info("隧道建立成功")
 
                 // 响应客户端，表示隧道已建立
                 clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
@@ -150,7 +232,8 @@ function handleHttpsRequest(clientSocket, target) {
                 clientSocket.pipe(remoteSocket)
                 remoteSocket.pipe(clientSocket)
             } else {
-                handleError(clientSocket, new Error('隧道建立失败'), '隧道建立')
+                logger.error(`隧道建立失败，响应: ${responseStr}`)
+                handleError(clientSocket, new Error(`隧道建立失败: ${responseStr}`), '隧道建立')
             }
         })
     })
@@ -163,6 +246,8 @@ function handleHttpsRequest(clientSocket, target) {
 
     // 处理错误
     remoteSocket.on('error', (err) => {
+        logger.error(`远程服务器连接错误: ${err.message}`)
+        logger.error(`错误代码: ${err.code}, 错误类型: ${err.type}`)
         handleError(clientSocket, err, '远程服务器连接错误')
     })
 }
@@ -303,6 +388,31 @@ function handleHttpRequest(clientSocket, requestData) {
 }
 
 // 启动本地代理服务器
-localServer.listen(config.local.port, () => {
-    logger.info(`本地代理服务器启动成功,监听端口: ${config.local.port}`)
-})
+async function startClient() {
+    try {
+        // 设置退出处理
+        setupExitHandlers()
+        
+        // 设置系统代理
+        await setupSystemProxy()
+        
+        // 启动本地代理服务器
+        localServer.listen(config.local.port, () => {
+            logger.info(`本地代理服务器启动成功,监听端口: ${config.local.port}`)
+            logger.info('客户端已准备就绪，系统代理已自动设置')
+        })
+        
+        // 处理服务器错误
+        localServer.on('error', (err) => {
+            logger.error(`本地代理服务器错误: ${err.message}`)
+            process.exit(1)
+        })
+        
+    } catch (error) {
+        logger.error(`启动客户端失败: ${error.message}`)
+        process.exit(1)
+    }
+}
+
+// 启动客户端
+startClient()
