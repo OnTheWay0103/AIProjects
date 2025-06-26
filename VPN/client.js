@@ -49,7 +49,7 @@ function handleError(socket, error, context) {
 
 // 创建本地代理服务器
 const localServer = net.createServer((clientSocket) => {
-    logger.info("新的客户端连接")
+    // logger.info("新的客户端连接")
 
     // 缓存客户端数据
     let clientData = ''
@@ -97,14 +97,12 @@ const localServer = net.createServer((clientSocket) => {
  * 处理HTTPS请求（CONNECT方法）
  */
 function handleHttpsRequest(clientSocket, target) {
-    logger.info(`处理HTTPS请求: ${target}`)
-    
     // 从target中提取域名
     const [host, port] = target.split(':')
     
     // 检查域名是否在白名单中
     if (!isDomainInWhitelist(host)) {
-        logger.info(`域名 ${host} 不在白名单中,直接连接`)
+        // logger.info(`域名 ${host} 不在白名单中,直接连接`)
         // 直接连接到目标服务器
         const targetSocket = net.connect(port || 443, host, () => {
             clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
@@ -118,6 +116,7 @@ function handleHttpsRequest(clientSocket, target) {
         return
     }
 
+    logger.info(`处理HTTPS请求: ${target}`)
     // 连接到远程代理服务器
     const remoteSocket = tls.connect(createTlsConfig(), () => {
         logger.info(`已连接到远程代理服务器,目标: ${target}`)
@@ -142,7 +141,7 @@ function handleHttpsRequest(clientSocket, target) {
             logger.debug(`收到远程服务器响应: ${responseStr.length} 字节`)
 
             if (responseStr.startsWith('HTTP/1.1 200')) {
-                logger.info("隧道建立成功")
+                // logger.info("隧道建立成功")
 
                 // 响应客户端，表示隧道已建立
                 clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
@@ -169,7 +168,7 @@ function handleHttpsRequest(clientSocket, target) {
 }
 
 function handleHttpRequest(clientSocket, requestData) {
-    logger.info("处理HTTP请求")
+    // logger.info("处理HTTP请求")
 
     // 解析HTTP请求头
     const [requestLine, ...headers] = requestData.split('\r\n')
@@ -183,11 +182,11 @@ function handleHttpRequest(clientSocket, requestData) {
     }
     const targetAddress = hostHeader.split(' ')[1] // 提取Host值
 
-    logger.info(`目标地址: ${targetAddress}`)
+    // logger.info(`目标地址: ${targetAddress}`)
     
     // 检查域名是否在白名单中
     if (!isDomainInWhitelist(targetAddress)) {
-        logger.info(`域名 ${targetAddress} 不在白名单中,直接连接`)
+        // logger.info(`域名 ${targetAddress} 不在白名单中,直接连接`)
         
         // 解析请求路径
         const requestPath = path.startsWith('http') ? new URL(path).pathname : path
@@ -260,6 +259,9 @@ function handleHttpRequest(clientSocket, requestData) {
         req.end()
         return
     }
+
+    logger.info("处理代理的HTTP请求")
+    logger.info(`目标地址: ${targetAddress}`)
 
     // 连接到远程服务器
     const remoteSocket = tls.connect(createTlsConfig(), () => {
